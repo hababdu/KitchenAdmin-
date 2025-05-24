@@ -13,27 +13,13 @@ function Layout() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <h1 className="text-xl font-bold text-blue-600">Food Delivery App</h1>
+            <h1 className="text-xl font-bold text-blue-600">Oshxona admini </h1>
             <div className="hidden md:block">
               <nav className="flex space-x-8">
              
+                
                 <NavLink
-                  to="/orders"
-                  className={({ isActive }) => 
-                    `px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                    }`
-                  }
-                >
-                  <div className="flex items-center">
-                    <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                   Olingan buyurtmalar
-                  </div>
-                </NavLink>
-                <NavLink
-                  to="/dash"
+                  to="/"
                   className={({ isActive }) => 
                     `px-3 py-2 rounded-md text-sm font-medium ${
                       isActive 
@@ -44,7 +30,7 @@ function Layout() {
                 >
                   <div className="flex items-center">
                     <ChartBarIcon className="h-5 w-5 mr-2" />
-                    Dashboard
+                   Buyurtmalar
                   </div>
                 </NavLink>
                 <NavLink

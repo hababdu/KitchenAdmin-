@@ -1,8 +1,10 @@
 import React from 'react';
-import CourierOrders from './CourierOrdersDashboard';
+import CourierOrdersDashboard from './CourierOrders';
 
 const Home = () => {
-  return <CourierOrders />;
+  return (
+  <CourierOrdersDashboard />
+);
 };
 
 export default Home;
