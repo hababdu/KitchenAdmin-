@@ -1,7 +1,10 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import newOrderSound from '../assets/notification.mp3';
+import timerExpiredSound from '../assets/notification.mp3';
+import orderAcceptedSound from '../assets/notification.mp3';
+import orderDeliveredSound from '../assets/notification.mp3';
 import {
   Box,
   Typography,
@@ -59,7 +62,6 @@ const ORDERS_API = 'https://hosilbek.pythonanywhere.com/api/user/orders/';
 const BASE_URL = 'https://hosilbek.pythonanywhere.com';
 const ACCEPT_ORDER_API = 'https://hosilbek.pythonanywhere.com/api/user/orders/';
 
-// Modern theme
 const theme = createTheme({
   palette: {
     primary: { main: '#1976d2' },
@@ -118,11 +120,17 @@ const AdminOrdersDashboard = () => {
   const [dialogError, setDialogError] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isInitialFetch, setIsInitialFetch] = useState(true);
-  const [timers, setTimers] = useState({}); // Track countdown timers
+  const [timers, setTimers] = useState({});
 
-  const notificationSound = new Audio('/sounds/notification.mp3');
+  const sounds = {
+    newOrder: new Audio(newOrderSound),
+    timerExpired: new Audio(timerExpiredSound),
+    orderAccepted: new Audio(orderAcceptedSound),
+    orderDelivered: new Audio(orderDeliveredSound),
+  };
+
   const token = localStorage.getItem('authToken');
-  const timerRefs = useRef({}); // Store interval IDs for cleanup
+  const timerRefs = useRef({});
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -148,15 +156,25 @@ const AdminOrdersDashboard = () => {
       if (!isInitialFetch && newOrders.length > 0) {
         setNewOrdersCount(prev => prev + newOrders.length);
         if (soundEnabled) {
-          notificationSound.play().catch(err => console.error('Ovoz xatosi:', err));
+          sounds.newOrder.play().catch(err => console.error('Yangi buyurtma ovoz xatosi:', err));
         }
       }
+
+      ordersData.forEach(order => {
+        const prevOrder = orders.find(o => o.id === order.id);
+        if (prevOrder && prevOrder.status !== order.status) {
+          if (order.status === 'kuryer_oldi' && soundEnabled) {
+            sounds.orderAccepted.play().catch(err => console.error('Buyurtma qabul qilindi ovoz xatosi:', err));
+          } else if (['yetkazib_berildi', 'buyurtma_topshirildi'].includes(order.status) && soundEnabled) {
+            sounds.orderDelivered.play().catch(err => console.error('Yetkazib berildi ovoz xatosi:', err));
+          }
+        }
+      });
 
       setOrders(ordersData);
       setLastFetch(new Date().toISOString());
       setIsInitialFetch(false);
 
-      // Initialize timers for kuryer_oldi orders; stop timers for kuryer_yolda or completed
       ordersData.forEach(order => {
         if (order.kitchen_time && order.status === 'kuryer_oldi') {
           startTimer(order.id, order.kitchen_time, order.kitchen_time_set_at);
@@ -171,7 +189,7 @@ const AdminOrdersDashboard = () => {
     }
   };
 
-  const handleFetchError = (err) => {
+  const handleFetchError = err => {
     let errorMessage = 'Buyurtmalarni olishda xato yuz berdi';
     if (err.response) {
       if (err.response.status === 401) {
@@ -190,7 +208,7 @@ const AdminOrdersDashboard = () => {
     setError(errorMessage);
   };
 
-  const handleAcceptOrder = async (orderId) => {
+  const handleAcceptOrder = async orderId => {
     if (!token) {
       setError('Tizimga kirish talab qilinadi');
       return;
@@ -202,13 +220,16 @@ const AdminOrdersDashboard = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchOrders(); // Refetch to update status and start timer if status becomes 'kuryer_oldi'
+      if (soundEnabled) {
+        sounds.orderAccepted.play().catch(err => console.error('Buyurtma qabul qilindi ovoz xatosi:', err));
+      }
+      fetchOrders();
     } catch (err) {
       setError(err.response?.data?.detail || 'Buyurtmani qabul qilishda xato');
     }
   };
 
-  const openEditDialog = (order) => {
+  const openEditDialog = order => {
     setCurrentOrder(order);
     if (order.kitchen_time) {
       if (typeof order.kitchen_time === 'string' && order.kitchen_time.includes(':')) {
@@ -229,16 +250,14 @@ const AdminOrdersDashboard = () => {
   };
 
   const startTimer = (orderId, kitchenTime, kitchenTimeSetAt) => {
-    // Parse kitchen_time to seconds
     let totalSeconds;
     if (typeof kitchenTime === 'string' && kitchenTime.includes(':')) {
       const [hours, minutes] = kitchenTime.split(':').map(Number);
-      totalSeconds = (hours * 3600) + (minutes * 60);
+      totalSeconds = hours * 3600 + minutes * 60;
     } else {
-      totalSeconds = parseInt(kitchenTime) * 60; // Assuming minutes if not in HH:MM format
+      totalSeconds = parseInt(kitchenTime) * 60;
     }
 
-    // Calculate elapsed time
     let remainingSeconds = totalSeconds;
     if (kitchenTimeSetAt) {
       const setTime = new Date(kitchenTimeSetAt).getTime();
@@ -246,7 +265,6 @@ const AdminOrdersDashboard = () => {
       const elapsedSeconds = Math.floor((now - setTime) / 1000);
       remainingSeconds = totalSeconds - elapsedSeconds;
     } else {
-      // Fallback: Use localStorage to persist start time
       const timerKey = `timer_start_${orderId}`;
       let startTime = localStorage.getItem(timerKey);
       if (!startTime) {
@@ -259,27 +277,24 @@ const AdminOrdersDashboard = () => {
       remainingSeconds = totalSeconds - elapsedSeconds;
     }
 
-    // Clear existing timer for this order
     if (timerRefs.current[orderId]) {
       clearInterval(timerRefs.current[orderId]);
     }
 
-    // Set initial timer value
     setTimers(prev => ({ ...prev, [orderId]: remainingSeconds }));
 
-    // Start countdown (continues into negative)
     timerRefs.current[orderId] = setInterval(() => {
       setTimers(prev => {
         const newTime = prev[orderId] - 1;
-        if (newTime < 0 && soundEnabled && prev[orderId] === 0) {
-          notificationSound.play().catch(err => console.error('Timer ovoz xatosi:', err));
+        if (newTime === 0 && soundEnabled) {
+          sounds.timerExpired.play().catch(err => console.error('Timer tugadi ovoz xatosi:', err));
         }
         return { ...prev, [orderId]: newTime };
       });
     }, 1000);
   };
 
-  const stopTimer = (orderId) => {
+  const stopTimer = orderId => {
     if (timerRefs.current[orderId]) {
       clearInterval(timerRefs.current[orderId]);
       delete timerRefs.current[orderId];
@@ -288,9 +303,7 @@ const AdminOrdersDashboard = () => {
         delete newTimers[orderId];
         return newTimers;
       });
-      // Clear localStorage entry if used
-      const timerKey = `timer_start_${orderId}`;
-      localStorage.removeItem(timerKey);
+      localStorage.removeItem(`timer_start_${orderId}`);
     }
   };
 
@@ -320,14 +333,13 @@ const AdminOrdersDashboard = () => {
 
       await axios.patch(
         `${ORDERS_API}${currentOrder.id}/`,
-        { kitchen_time: formattedTime, kitchen_time_set_at: new Date().toISOString() }, // Set kitchen_time_set_at
+        { kitchen_time: formattedTime, kitchen_time_set_at: new Date().toISOString() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setEditDialogOpen(false);
       setKitchenHours('');
       setKitchenMinutes('');
       fetchOrders();
-      // Start timer if status is 'kuryer_oldi'
       if (currentOrder.status === 'kuryer_oldi') {
         startTimer(currentOrder.id, formattedTime, new Date().toISOString());
       }
@@ -337,7 +349,12 @@ const AdminOrdersDashboard = () => {
   };
 
   const testSound = () => {
-    notificationSound.play().catch(err => console.error('Sinov ovozi xatosi:', err));
+    if (soundEnabled) {
+      sounds.newOrder.play().catch(err => console.error('Yangi buyurtma sinov ovozi xatosi:', err));
+      setTimeout(() => sounds.timerExpired.play().catch(err => console.error('Timer sinov ovozi xatosi:', err)), 1000);
+      setTimeout(() => sounds.orderAccepted.play().catch(err => console.error('Qabul qilindi sinov ovozi xatosi:', err)), 2000);
+      setTimeout(() => sounds.orderDelivered.play().catch(err => console.error('Yetkazildi sinov ovozi xatosi:', err)), 3000);
+    }
   };
 
   useEffect(() => {
@@ -349,7 +366,7 @@ const AdminOrdersDashboard = () => {
     };
   }, []);
 
-  const formatTimer = (seconds) => {
+  const formatTimer = seconds => {
     if (seconds === undefined || seconds === null) return 'Belgilanmagan';
     const isNegative = seconds < 0;
     const absSeconds = Math.abs(seconds);
@@ -360,14 +377,14 @@ const AdminOrdersDashboard = () => {
     return isNegative ? `-${timeString}` : timeString;
   };
 
-  const getStatusChip = (status) => {
+  const getStatusChip = status => {
     const statusMap = {
-      'buyurtma_tushdi': { label: 'Yangi', color: 'primary', icon: <AccessTime /> },
-      'oshxona_vaqt_belgiladi': { label: 'Oshxona vaqt belgilaydi', color: 'info', icon: <Timer /> },
-      'kuryer_oldi': { label: 'Kuryer oldi', color: 'secondary', icon: <CheckCircle /> },
-      'kuryer_yolda': { label: 'Yetkazilmoqda', color: 'warning', icon: <LocalShipping /> },
-      'yetkazib_berildi': { label: 'Yetkazib berildi', color: 'success', icon: <CheckCircle /> },
-      'buyurtma_topshirildi': { label: 'Topshirildi', color: 'success', icon: <CheckCircle /> }
+      buyurtma_tushdi: { label: 'Yangi', color: 'primary', icon: <AccessTime /> },
+      oshxona_vaqt_belgiladi: { label: 'Oshxona vaqt belgilaydi', color: 'info', icon: <Timer /> },
+      kuryer_oldi: { label: 'Kuryer oldi', color: 'secondary', icon: <CheckCircle /> },
+      kuryer_yolda: { label: 'Yetkazilmoqda', color: 'warning', icon: <LocalShipping /> },
+      yetkazib_berildi: { label: 'Yetkazib berildi', color: 'success', icon: <CheckCircle /> },
+      buyurtma_topshirildi: { label: 'Topshirildi', color: 'success', icon: <CheckCircle /> }
     };
     const config = statusMap[status] || { label: status, color: 'default', icon: null };
     return (
@@ -382,7 +399,7 @@ const AdminOrdersDashboard = () => {
     );
   };
 
-  const formatTime = (kitchenTime) => {
+  const formatTime = kitchenTime => {
     if (!kitchenTime) return 'Belgilanmagan';
     if (typeof kitchenTime === 'string' && kitchenTime.includes(':')) {
       const [hours, minutes] = kitchenTime.split(':').map(Number);
@@ -393,9 +410,10 @@ const AdminOrdersDashboard = () => {
     return `${hours > 0 ? `${hours} soat` : ''} ${mins > 0 ? `${mins} minut` : ''}`.trim();
   };
 
-  const filteredOrders = orders.filter(order =>
-    order.id.toString().includes(searchQuery) ||
-    order.user?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOrders = orders.filter(
+    order =>
+      order.id.toString().includes(searchQuery) ||
+      order.user?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const newOrders = filteredOrders.filter(o => ['buyurtma_tushdi', 'oshxona_vaqt_belgiladi'].includes(o.status));
@@ -423,7 +441,6 @@ const AdminOrdersDashboard = () => {
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ p: isMobile ? 2 : 4, bgcolor: 'background.default', minHeight: '100vh' }}>
-        {/* Header */}
         <Stack direction={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems="center" mb={4}>
           <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="primary.main">
             Buyurtmalar Boshqaruvi
@@ -438,7 +455,7 @@ const AdminOrdersDashboard = () => {
               size="small"
               placeholder="ID yoki mijoz bo'yicha qidirish"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -452,7 +469,9 @@ const AdminOrdersDashboard = () => {
               control={<Switch checked={soundEnabled} onChange={() => setSoundEnabled(prev => !prev)} />}
               label="Ovozli bildirishnomalar"
             />
-            <Button variant="outlined" onClick={testSound}>Ovoz sinovi</Button>
+            <Button variant="outlined" onClick={testSound}>
+              Ovoz sinovi
+            </Button>
             <Button
               variant="contained"
               startIcon={<Refresh />}
@@ -464,7 +483,6 @@ const AdminOrdersDashboard = () => {
           </Stack>
         </Stack>
 
-        {/* Summary Cards */}
         <Grid container spacing={isMobile ? 2 : 3} mb={4}>
           {[
             { title: 'Jami Buyurtmalar', value: orders.length, color: 'text.primary' },
@@ -484,14 +502,17 @@ const AdminOrdersDashboard = () => {
                   '&:hover': { transform: 'scale(1.02)' }
                 }}
               >
-                <Typography variant="subtitle2" color="text.secondary">{item.title}</Typography>
-                <Typography variant="h5" color={item.color} fontWeight="bold">{item.value}</Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {item.title}
+                </Typography>
+                <Typography variant="h5" color={item.color} fontWeight="bold">
+                  {item.value}
+                </Typography>
               </Paper>
             </Grid>
           ))}
         </Grid>
 
-        {/* Tabs */}
         <Tabs
           value={activeTab}
           onChange={(e, newValue) => setActiveTab(newValue)}
@@ -506,7 +527,6 @@ const AdminOrdersDashboard = () => {
           <Tab label={`Barchasi (${orders.length})`} />
         </Tabs>
 
-        {/* Orders List */}
         <Box>
           {[
             newOrders,
@@ -545,7 +565,9 @@ const AdminOrdersDashboard = () => {
                   >
                     <CardContent sx={{ p: isMobile ? 2 : 3 }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                        <Typography variant="h6" fontWeight="bold">#{order.id}</Typography>
+                        <Typography variant="h6" fontWeight="bold">
+                          #{order.id}
+                        </Typography>
                         <Stack direction="row" spacing={1} alignItems="center">
                           {getStatusChip(order.status)}
                           <IconButton onClick={() => toggleOrderExpand(order.id)}>
@@ -667,7 +689,6 @@ const AdminOrdersDashboard = () => {
           )}
         </Box>
 
-        {/* Kitchen Time Dialog */}
         <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="xs" fullWidth>
           <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
             Oshxona Vaqtini Belgilash
@@ -679,7 +700,7 @@ const AdminOrdersDashboard = () => {
                 type="number"
                 fullWidth
                 value={kitchenHours}
-                onChange={(e) => setKitchenHours(e.target.value)}
+                onChange={e => setKitchenHours(e.target.value)}
                 InputProps={{ inputProps: { min: 0, max: 3 } }}
                 helperText="0-3 soat"
               />
@@ -688,7 +709,7 @@ const AdminOrdersDashboard = () => {
                 type="number"
                 fullWidth
                 value={kitchenMinutes}
-                onChange={(e) => setKitchenMinutes(e.target.value)}
+                onChange={e => setKitchenMinutes(e.target.value)}
                 InputProps={{ inputProps: { min: 0, max: 59 } }}
                 helperText="0-59 minut"
               />
@@ -707,7 +728,6 @@ const AdminOrdersDashboard = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Last Fetch Time */}
         {lastFetch && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block', textAlign: 'center' }}>
             Oxirgi yangilanish: {new Date(lastFetch).toLocaleString('uz-UZ')}
