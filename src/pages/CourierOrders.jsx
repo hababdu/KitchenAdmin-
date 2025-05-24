@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -56,14 +57,15 @@ import {
 
 const ORDERS_API = 'https://hosilbek.pythonanywhere.com/api/user/orders/';
 const BASE_URL = 'https://hosilbek.pythonanywhere.com';
-const ACCEPT_ORDER_API = 'https://hosilbek.pythonanywhere.com/api/user/orders/'; // Assumed endpoint
+const ACCEPT_ORDER_API = 'https://hosilbek.pythonanywhere.com/api/user/orders/';
 
 // Modern theme
 const theme = createTheme({
   palette: {
     primary: { main: '#1976d2' },
     secondary: { main: '#f50057' },
-    background: { default: '#f5f7fa' }
+    background: { default: '#f5f7fa' },
+    error: { main: '#d32f2f' }
   },
   components: {
     MuiCard: {
@@ -116,9 +118,11 @@ const AdminOrdersDashboard = () => {
   const [dialogError, setDialogError] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isInitialFetch, setIsInitialFetch] = useState(true);
+  const [timers, setTimers] = useState({}); // Track countdown timers
 
   const notificationSound = new Audio('/sounds/notification.mp3');
   const token = localStorage.getItem('authToken');
+  const timerRefs = useRef({}); // Store interval IDs for cleanup
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -151,6 +155,15 @@ const AdminOrdersDashboard = () => {
       setOrders(ordersData);
       setLastFetch(new Date().toISOString());
       setIsInitialFetch(false);
+
+      // Initialize timers for kuryer_oldi orders; stop timers for kuryer_yolda or completed
+      ordersData.forEach(order => {
+        if (order.kitchen_time && order.status === 'kuryer_oldi') {
+          startTimer(order.id, order.kitchen_time, order.kitchen_time_set_at);
+        } else if (['kuryer_yolda', 'yetkazib_berildi', 'buyurtma_topshirildi'].includes(order.status)) {
+          stopTimer(order.id);
+        }
+      });
     } catch (err) {
       handleFetchError(err);
     } finally {
@@ -189,7 +202,7 @@ const AdminOrdersDashboard = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchOrders();
+      fetchOrders(); // Refetch to update status and start timer if status becomes 'kuryer_oldi'
     } catch (err) {
       setError(err.response?.data?.detail || 'Buyurtmani qabul qilishda xato');
     }
@@ -213,6 +226,72 @@ const AdminOrdersDashboard = () => {
     }
     setDialogError('');
     setEditDialogOpen(true);
+  };
+
+  const startTimer = (orderId, kitchenTime, kitchenTimeSetAt) => {
+    // Parse kitchen_time to seconds
+    let totalSeconds;
+    if (typeof kitchenTime === 'string' && kitchenTime.includes(':')) {
+      const [hours, minutes] = kitchenTime.split(':').map(Number);
+      totalSeconds = (hours * 3600) + (minutes * 60);
+    } else {
+      totalSeconds = parseInt(kitchenTime) * 60; // Assuming minutes if not in HH:MM format
+    }
+
+    // Calculate elapsed time
+    let remainingSeconds = totalSeconds;
+    if (kitchenTimeSetAt) {
+      const setTime = new Date(kitchenTimeSetAt).getTime();
+      const now = new Date().getTime();
+      const elapsedSeconds = Math.floor((now - setTime) / 1000);
+      remainingSeconds = totalSeconds - elapsedSeconds;
+    } else {
+      // Fallback: Use localStorage to persist start time
+      const timerKey = `timer_start_${orderId}`;
+      let startTime = localStorage.getItem(timerKey);
+      if (!startTime) {
+        startTime = new Date().toISOString();
+        localStorage.setItem(timerKey, startTime);
+      }
+      const setTime = new Date(startTime).getTime();
+      const now = new Date().getTime();
+      const elapsedSeconds = Math.floor((now - setTime) / 1000);
+      remainingSeconds = totalSeconds - elapsedSeconds;
+    }
+
+    // Clear existing timer for this order
+    if (timerRefs.current[orderId]) {
+      clearInterval(timerRefs.current[orderId]);
+    }
+
+    // Set initial timer value
+    setTimers(prev => ({ ...prev, [orderId]: remainingSeconds }));
+
+    // Start countdown (continues into negative)
+    timerRefs.current[orderId] = setInterval(() => {
+      setTimers(prev => {
+        const newTime = prev[orderId] - 1;
+        if (newTime < 0 && soundEnabled && prev[orderId] === 0) {
+          notificationSound.play().catch(err => console.error('Timer ovoz xatosi:', err));
+        }
+        return { ...prev, [orderId]: newTime };
+      });
+    }, 1000);
+  };
+
+  const stopTimer = (orderId) => {
+    if (timerRefs.current[orderId]) {
+      clearInterval(timerRefs.current[orderId]);
+      delete timerRefs.current[orderId];
+      setTimers(prev => {
+        const newTimers = { ...prev };
+        delete newTimers[orderId];
+        return newTimers;
+      });
+      // Clear localStorage entry if used
+      const timerKey = `timer_start_${orderId}`;
+      localStorage.removeItem(timerKey);
+    }
   };
 
   const handleUpdateKitchenTime = async () => {
@@ -241,13 +320,17 @@ const AdminOrdersDashboard = () => {
 
       await axios.patch(
         `${ORDERS_API}${currentOrder.id}/`,
-        { kitchen_time: formattedTime },
+        { kitchen_time: formattedTime, kitchen_time_set_at: new Date().toISOString() }, // Set kitchen_time_set_at
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setEditDialogOpen(false);
       setKitchenHours('');
       setKitchenMinutes('');
       fetchOrders();
+      // Start timer if status is 'kuryer_oldi'
+      if (currentOrder.status === 'kuryer_oldi') {
+        startTimer(currentOrder.id, formattedTime, new Date().toISOString());
+      }
     } catch (err) {
       setDialogError(err.response?.data?.detail || 'Vaqtni yangilashda xato');
     }
@@ -260,8 +343,22 @@ const AdminOrdersDashboard = () => {
   useEffect(() => {
     fetchOrders();
     const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      Object.values(timerRefs.current).forEach(clearInterval);
+    };
   }, []);
+
+  const formatTimer = (seconds) => {
+    if (seconds === undefined || seconds === null) return 'Belgilanmagan';
+    const isNegative = seconds < 0;
+    const absSeconds = Math.abs(seconds);
+    const hours = Math.floor(absSeconds / 3600);
+    const minutes = Math.floor((absSeconds % 3600) / 60);
+    const secs = absSeconds % 60;
+    const timeString = `${hours > 0 ? `${String(hours).padStart(2, '0')}:` : ''}${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return isNegative ? `-${timeString}` : timeString;
+  };
 
   const getStatusChip = (status) => {
     const statusMap = {
@@ -269,7 +366,8 @@ const AdminOrdersDashboard = () => {
       'oshxona_vaqt_belgiladi': { label: 'Oshxona vaqt belgilaydi', color: 'info', icon: <Timer /> },
       'kuryer_oldi': { label: 'Kuryer oldi', color: 'secondary', icon: <CheckCircle /> },
       'kuryer_yolda': { label: 'Yetkazilmoqda', color: 'warning', icon: <LocalShipping /> },
-      'yetkazib_berildi': { label: 'Yetkazib berildi', color: 'success', icon: <CheckCircle /> }
+      'yetkazib_berildi': { label: 'Yetkazib berildi', color: 'success', icon: <CheckCircle /> },
+      'buyurtma_topshirildi': { label: 'Topshirildi', color: 'success', icon: <CheckCircle /> }
     };
     const config = statusMap[status] || { label: status, color: 'default', icon: null };
     return (
@@ -303,7 +401,7 @@ const AdminOrdersDashboard = () => {
   const newOrders = filteredOrders.filter(o => ['buyurtma_tushdi', 'oshxona_vaqt_belgiladi'].includes(o.status));
   const acceptedOrders = filteredOrders.filter(o => o.status === 'kuryer_oldi');
   const inDeliveryOrders = filteredOrders.filter(o => o.status === 'kuryer_yolda');
-  const completedOrders = filteredOrders.filter(o => o.status === 'buyurtma_topshirildi');
+  const completedOrders = filteredOrders.filter(o => o.status === 'yetkazib_berildi' || o.status === 'buyurtma_topshirildi');
 
   if (loading && orders.length === 0) {
     return (
@@ -403,7 +501,7 @@ const AdminOrdersDashboard = () => {
         >
           <Tab label={`Yangi (${newOrders.length})`} />
           <Tab label={`Kuryer oldi (${acceptedOrders.length})`} />
-          <Tab label={`Kuryer yolda  (${inDeliveryOrders.length})`} />
+          <Tab label={`Kuryer yolda (${inDeliveryOrders.length})`} />
           <Tab label={`Tugatildi (${completedOrders.length})`} />
           <Tab label={`Barchasi (${orders.length})`} />
         </Tabs>
@@ -437,7 +535,7 @@ const AdminOrdersDashboard = () => {
                       borderLeft: `4px solid ${
                         order.status === 'buyurtma_tushdi' || order.status === 'oshxona_vaqt_belgiladi'
                           ? theme.palette.primary.main
-                          : order.status === 'Kuryer_oldi'
+                          : order.status === 'kuryer_oldi'
                           ? theme.palette.secondary.main
                           : order.status === 'kuryer_yolda'
                           ? theme.palette.warning.main
@@ -462,8 +560,14 @@ const AdminOrdersDashboard = () => {
                         <Typography variant="body2" color="text.secondary">
                           Mijoz: {order.user}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Oshxona vaqti: {formatTime(order.kitchen_time)}
+                        <Typography
+                          variant="body2"
+                          color={order.status === 'kuryer_oldi' && timers[order.id] < 0 ? 'error.main' : 'text.secondary'}
+                          sx={{ fontWeight: order.status === 'kuryer_oldi' && timers[order.id] < 0 ? 'bold' : 'normal' }}
+                        >
+                          {order.status === 'kuryer_oldi' && timers[order.id] !== undefined
+                            ? `Qolgan vaqt: ${formatTimer(timers[order.id])}`
+                            : `Oshxona vaqti: ${formatTime(order.kitchen_time)}`}
                         </Typography>
                       </Stack>
                       <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
@@ -478,7 +582,15 @@ const AdminOrdersDashboard = () => {
                             >
                               Vaqt belgilash
                             </Button>
-                         
+                            <Button
+                              variant="contained"
+                              color="secondary"
+                              size="small"
+                              startIcon={<CheckCircle />}
+                              onClick={() => handleAcceptOrder(order.id)}
+                            >
+                              Buyurtmani olish
+                            </Button>
                           </>
                         )}
                       </Stack>
@@ -495,7 +607,14 @@ const AdminOrdersDashboard = () => {
                                   <Phone fontSize="small" color="action" />
                                   <Typography variant="body2">{order.contact_number}</Typography>
                                 </Stack>
-                                
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <LocationOn fontSize="small" color="action" />
+                                  <Typography variant="body2">{order.shipping_address}</Typography>
+                                </Stack>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Timer fontSize="small" color="action" />
+                                  <Typography variant="body2">Oshxona vaqti: {formatTime(order.kitchen_time)}</Typography>
+                                </Stack>
                                 <Stack direction="row" spacing={1} alignItems="center">
                                   <Payment fontSize="small" color="action" />
                                   <Typography variant="body2">
