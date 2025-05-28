@@ -76,17 +76,7 @@ function Layout() {
             <ShoppingCartIcon className="h-6 w-6" />
             <span className="mt-1">Orders</span>
           </NavLink>
-          <NavLink
-            to="/dash"
-            className={({ isActive }) => 
-              `flex flex-col items-center py-3 px-4 text-xs ${
-                isActive ? 'text-blue-600' : 'text-gray-600'
-              }`
-            }
-          >
-            <ChartBarIcon className="h-6 w-6" />
-            <span className="mt-1">Dashboard</span>
-          </NavLink>
+          
           <NavLink
             to="/profile"
             className={({ isActive }) => 
