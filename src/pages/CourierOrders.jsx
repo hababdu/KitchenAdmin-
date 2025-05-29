@@ -213,24 +213,7 @@ const CourierOrders = () => {
   };
 
   // Buyurtmani qabul qilish
-  const acceptOrder = async (orderId) => {
-    const token = localStorage.getItem('authToken');
-    try {
-      await axios.patch(
-        `${ACCEPT_ORDER_API}${orderId}/`,
-        { status: 'kuryer_oldi' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (soundEnabled && userInteracted) {
-        sounds.orderAccepted.play().catch(err => console.error('Qabul qilindi ovozi xatosi:', err));
-      }
-      
-      fetchOrders();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Buyurtmani qabul qilishda xato');
-    }
-  };
+
 
   // Oshxona vaqtini tahrirlash
   const openEditDialog = order => {
@@ -783,23 +766,7 @@ const CourierOrders = () => {
                               Vaqt belgilash
                             </Button>
                           )}
-                          {order.status === 'oshxona_vaqt_belgiladi' && (
-                            <Button
-                              variant="contained"
-                              color="success"
-                              startIcon={<CheckCircle />}
-                              onClick={() => acceptOrder(order.id)}
-                              size={isMobile ? 'small' : 'medium'}
-                              sx={{
-                                backgroundColor: 'success.main',
-                                '&:hover': {
-                                  backgroundColor: 'success.dark'
-                                }
-                              }}
-                            >
-                              Qabul qilish
-                            </Button>
-                          )}
+                         
                         </Stack>
                       )}
                       <Collapse in={expandedOrder === order.id}>
