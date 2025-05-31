@@ -149,11 +149,9 @@ const CourierOrders = () => {
       });
 
       const ordersData = Array.isArray(response.data) ? response.data : [];
-   
-
       const buyurtmaTushdiOrders = ordersData.filter(o => o.status === 'buyurtma_tushdi');
-      
 
+      // Play sound and show notification if there are buyurtma_tushdi orders
       if (buyurtmaTushdiOrders.length > 0) {
         setSuccess(`${buyurtmaTushdiOrders.length} ta yangi buyurtma!`);
         if (soundEnabled && userInteracted && audioRef.current) {
@@ -166,6 +164,8 @@ const CourierOrders = () => {
         } else {
           console.log('Sound not played:', { soundEnabled, userInteracted, audioLoaded: !!audioRef.current });
         }
+      } else {
+        setSuccess('');
       }
 
       setOrders(ordersData);
@@ -270,7 +270,8 @@ const CourierOrders = () => {
   // Fetch orders on mount and every 30 seconds
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 30000);
+    const interval = setInterval(fetchOrders, 10000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -365,145 +366,143 @@ const CourierOrders = () => {
                     <Timer fontSize="small" /> Oshxona vaqti: {formatTime(order.kitchen_time)}
                   </Typography>
 
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                            Buyurtma Tafsilotlari
-                            </Typography>
-                            <Stack spacing={1}>
-                            <Stack direction="row" spacing={1}  alignItems="center">
-                              <Person fontSize="small" color="action" />
-                              <Typography variant="body2">Mijoz: {order.user?.name || 'Noma\'lum'}</Typography>
-                            </Stack>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Phone fontSize="small" color="action" />
-                              <Typography
-                              color='blue'
-                              variant="body2"
-                              component="a"
-                              href={`tel:${order.contact_number}`}
-                              sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { textDecoration: 'underline' } }}
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                    Buyurtma Tafsilotlari
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Person fontSize="small" color="action" />
+                      <Typography variant="body2">Mijoz: {order.user?.name || 'Noma\'lum'}</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Phone fontSize="small" color="action" />
+                      <Typography
+                        color='blue'
+                        variant="body2"
+                        component="a"
+                        href={`tel:${order.contact_number}`}
+                        sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        Telefon: {order.contact_number || 'Noma\'lum'}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <LocationOn fontSize="small" color="action" />
+                      <Typography variant="body2">Manzil: {order.address || 'Noma\'lum'}</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Payment fontSize="small" color="action" />
+                      <Typography variant="body2">To'lov turi: {order.payment === 'naqd' ? 'Naqd' : 'Karta'}</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Restaurant fontSize="small" color="action" />
+                      <Typography variant="body2">Restoran: {order.kitchen?.name || 'Noma\'lum'}</Typography>
+                    </Stack>
+                    {order.notes && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Assignment fontSize="small" color="action" />
+                        <Typography variant="body2">Eslatmalar: {order.notes}</Typography>
+                      </Stack>
+                    )}
+                    {order.status === 'oshxona_vaqt_belgiladi' && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Timer fontSize="small" color="action" />
+                        <Typography variant="body2">Vaqt belgilandi: {formatTimestamp(order.kitchen_time_set_at)}</Typography>
+                      </Stack>
+                    )}
+                    {order.status === 'kuryer_oldi' && (
+                      <>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Person fontSize="small" color="action" />
+                          <Typography variant="body2">Kuryer: {order.courier?.user?.username || 'Noma\'lum'}</Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Phone fontSize="small" color="action" />
+                          <Typography
+                            variant="body2"
+                            component="a"
+                            href={`tel:${order.courier?.phone_number}`}
+                            sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { textDecoration: 'underline' } }}
+                          >
+                            Kuryer raqami: {order.courier?.phone_number || 'Noma\'lum'}
+                          </Typography>
+                        </Stack>
+                      </>
+                    )}
+                    {order.status === 'qaytarildi' && order.return_reason && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Assignment fontSize="small" color="action" />
+                        <Typography variant="body2">Qaytarish sababi: {order.return_reason}</Typography>
+                      </Stack>
+                    )}
+                  </Stack>
+
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                    Mahsulotlar ({order.items.length})
+                  </Typography>
+                  <TableContainer component={Paper} sx={{ maxHeight: 200, overflow: 'auto' }}>
+                    <Table size={isMobile ? 'small' : 'medium'} stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: isMobile ? '50px' : '60px' }}>Rasm</TableCell>
+                          <TableCell>Mahsulot</TableCell>
+                          <TableCell align="right" sx={{ width: isMobile ? '60px' : '80px' }}>Soni</TableCell>
+                          <TableCell align="right" sx={{ width: isMobile ? '80px' : '100px' }}>Narxi</TableCell>
+                          <TableCell align="right" sx={{ width: isMobile ? '80px' : '100px' }}>Umumiy</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {order.items.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <Avatar
+                                variant="rounded"
+                                src={item.product?.photo ? `${BASE_URL}${item.product.photo}` : undefined}
+                                sx={{ bgcolor: 'grey.200', width: isMobile ? 32 : 40, height: isMobile ? 32 : 40 }}
                               >
-                              Telefon: {order.contact_number || 'Noma\'lum'}
-                              </Typography>
-                            </Stack>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <LocationOn fontSize="small" color="action" />
-                              <Typography variant="body2">Manzil: {order.address || 'Noma\'lum'}</Typography>
-                            </Stack>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Payment fontSize="small" color="action" />
-                              <Typography variant="body2">To'lov turi: {order.payment === 'naqd' ? 'Naqd' : 'Karta'}</Typography>
-                            </Stack>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Restaurant fontSize="small" color="action" />
-                              <Typography variant="body2">Restoran: {order.kitchen?.name || 'Noma\'lum'}</Typography>
-                            </Stack>
-                            {order.notes && (
-                              <Stack direction="row" spacing={1} alignItems="center">
-                              <Assignment fontSize="small" color="action" />
-                              <Typography variant="body2">Eslatmalar: {order.notes}</Typography>
-                              </Stack>
-                            )}
-                            {order.status === 'oshxona_vaqt_belgiladi' && (
-                              <>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <Timer fontSize="small" color="action" />
-                                <Typography variant="body2">Vaqt belgilandi: {formatTimestamp(order.kitchen_time_set_at)}</Typography>
-                              </Stack>
-                              </>
-                            )}
-                            {order.status === 'kuryer_oldi' && (
-                              <>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <Person fontSize="small" color="action" />
-                                <Typography variant="body2">Kuryer: {order.courier?.user?.username || 'Noma\'lum'}</Typography>
-                              </Stack>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <Phone fontSize="small" color="action" />
-                                <Typography
-                                variant="body2"
-                                component="a"
-                                href={`tel:${order.courier?.phone_number}`}
-                                sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { textDecoration: 'underline' } }}
-                                >
-                                Kuryer raqami: {order.courier?.phone_number || 'Noma\'lum'}
-                                </Typography>
-                              </Stack>
-                              </>
-                            )}
-                            {order.status === 'qaytarildi' && order.return_reason && (
-                              <Stack direction="row" spacing={1} alignItems="center">
-                              <Assignment fontSize="small" color="action" />
-                              <Typography variant="body2">Qaytarish sababi: {order.return_reason}</Typography>
-                              </Stack>
-                            )}
-                            </Stack>
+                                <Restaurant fontSize="small" />
+                              </Avatar>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{item.product?.title || 'Noma\'lum'}</Typography>
+                              {item.notes && (
+                                <Typography variant="caption" color="text.secondary">{item.notes}</Typography>
+                              )}
+                            </TableCell>
+                            <TableCell align="right">{item.quantity}</TableCell>
+                            <TableCell align="right">{parseFloat(item.price).toLocaleString('uz-UZ')} so'm</TableCell>
+                            <TableCell align="right">{(item.quantity * parseFloat(item.price)).toLocaleString('uz-UZ')} so'm</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
 
-                                      <Divider sx={{ my: 2 }} />
-                                      <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                                      Mahsulotlar ({order.items.length})
-                                      </Typography>
-                                      <TableContainer component={Paper} sx={{ maxHeight: 200, overflow: 'auto' }}>
-                                      <Table size={isMobile ? 'small' : 'medium'} stickyHeader>
-                                        <TableHead>
-                                        <TableRow>
-                                          <TableCell sx={{ width: isMobile ? '50px' : '60px' }}>Rasm</TableCell>
-                                          <TableCell>Mahsulot</TableCell>
-                                          <TableCell align="right" sx={{ width: isMobile ? '60px' : '80px' }}>Soni</TableCell>
-                                          <TableCell align="right" sx={{ width: isMobile ? '80px' : '100px' }}>Narxi</TableCell>
-                                          <TableCell align="right" sx={{ width: isMobile ? '80px' : '100px' }}>Umumiy</TableCell>
-                                        </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                        {order.items.map((item, index) => (
-                                          <TableRow key={index}>
-                                          <TableCell>
-                                            <Avatar
-                                            variant="rounded"
-                                            src={item.product?.photo ? `${BASE_URL}${item.product.photo}` : undefined}
-                                            sx={{ bgcolor: 'grey.200', width: isMobile ? 32 : 40, height: isMobile ? 32 : 40 }}
-                                            >
-                                            <Restaurant fontSize="small" />
-                                            </Avatar>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Typography variant="body2">{item.product?.title || 'Noma\'lum'}</Typography>
-                                            {item.notes && (
-                                            <Typography variant="caption" color="text.secondary">{item.notes}</Typography>
-                                            )}
-                                          </TableCell>
-                                          <TableCell align="right">{item.quantity}</TableCell>
-                                          <TableCell align="right">{parseFloat(item.price).toLocaleString('uz-UZ')} so'm</TableCell>
-                                          <TableCell align="right">{(item.quantity * parseFloat(item.price)).toLocaleString('uz-UZ')} so'm</TableCell>
-                                          </TableRow>
-                                        ))}
-                                        </TableBody>
-                                      </Table>
-                                      </TableContainer>
+                  {/* Total Price */}
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 2, textAlign: 'right' }}>
+                    Jami summa: {calculateTotalPrice(order.items)} so'm
+                  </Typography>
 
-                                      {/* Total Price */}
-                                      <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 2, textAlign: 'right' }}>
-                                      Jami summa: {calculateTotalPrice(order.items)} so'm
-                                      </Typography>
+                  {/* Action Button */}
+                  {order.status === 'buyurtma_tushdi' && (
+                    <Button
+                      variant="contained"
+                      startIcon={<Edit />}
+                      onClick={() => openEditDialog(order)}
+                      sx={{ mt: 2, width: '100%' }}
+                    >
+                      Vaqt belgilash
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
 
-                                      {/* Action Button */}
-                                      {order.status === 'buyurtma_tushdi' && (
-                                      <Button
-                                        variant="contained"
-                                        startIcon={<Edit />}
-                                        onClick={() => openEditDialog(order)}
-                                        sx={{ mt: 2, width: '100%' }}
-                                      >
-                                        Vaqt belgilash
-                                      </Button>
-                                      )}
-                                    </CardContent>
-                                    </Card>
-                                  ))
-                                  )}
-                                </Box>
-
-                                {/* Kitchen Time Dialog */}
+        {/* Kitchen Time Dialog */}
         <Dialog
           open={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
