@@ -325,12 +325,12 @@ const CourierOrders = () => {
           value={activeTab}
           onChange={(e, newValue) => setActiveTab(newValue)}
           variant={isMobile ? 'scrollable' : 'fullWidth'}
-          sx={{ mb: 2, bgcolor: 'white', borderRadius: '12px', px: 1 }}
+          sx={{ mb: 2, bgcolor: 'white', borderRadius: '12px' }}
         >
-          <Tab label={`Yangi (${newOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
-          <Tab label={`Vaqt belgilangan (${timeSetOrders.length})`} icon={<Timer fontSize="small" />} iconPosition="start" />
-          <Tab label={`Kuryer oldi (${acceptedOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
-          <Tab label={`Qaytarilganlar (${returnedOrders.length})`} icon={<AssignmentReturn fontSize="small" />} iconPosition="start" />
+          <Tab label={`(${newOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
+          <Tab label={`(${timeSetOrders.length})`} icon={<Timer fontSize="small" />} iconPosition="start" />
+          <Tab label={`(${acceptedOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
+          <Tab label={` (${returnedOrders.length})`} icon={<AssignmentReturn fontSize="small" />} iconPosition="start" />
         </Tabs>
 
         {/* Orders List */}
