@@ -10,7 +10,7 @@ function Layout() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white ">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <h1 className="text-xl font-bold text-blue-600">Oshxona admini </h1>
@@ -55,8 +55,8 @@ function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main >
+        <div>
           <Outlet />
         </div>
       </main>
@@ -91,12 +91,6 @@ function Layout() {
         </nav>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white py-4 border-t border-gray-200 mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
-          <p>&copy; 2025 Food Delivery App. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

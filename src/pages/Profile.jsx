@@ -17,9 +17,14 @@ import {
   ListItemText,
   Snackbar,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import { Work as WorkIcon, Person as PersonIcon, Phone as PhoneIcon, Check as CheckIcon } from '@mui/icons-material';
+import { Work as WorkIcon, Person as PersonIcon, Phone as PhoneIcon, Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import ProductsTable from './ProductsTable';
 
 const theme = createTheme({
   palette: {
@@ -41,6 +46,7 @@ const KitchenProfile = () => {
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isToggling, setIsToggling] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const token = localStorage.getItem('authToken');
   const PROFILE_URL = 'https://hosilbek.pythonanywhere.com/api/user/me/';
   const KITCHENS_URL = 'https://hosilbek.pythonanywhere.com/api/user/kitchens/';
@@ -49,7 +55,6 @@ const KitchenProfile = () => {
     headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
   });
 
-  // Profil va oshxona ma'lumotlarini olish
   const fetchData = useCallback(async () => {
     if (!token) {
       setError('Foydalanuvchi tizimga kirmagan');
@@ -61,7 +66,6 @@ const KitchenProfile = () => {
       setLoading(true);
       setError(null);
 
-      // Profil ma'lumotlarini olish
       const profileResponse = await axiosInstance.get(PROFILE_URL);
       const userProfile = profileResponse.data;
       if (!userProfile.roles?.is_kitchen_admin) {
@@ -73,7 +77,6 @@ const KitchenProfile = () => {
       setProfile(userProfile);
       console.log('Profil ma’lumotlari yuklandi:', userProfile);
 
-      // kitchen_id ni profil ma'lumotlaridan olish
       const kitchenId = userProfile.kitchen_admin_profile?.kitchen_id;
       if (!kitchenId) {
         setError('Oshxona ID si topilmadi. Administrator bilan bog‘laning.');
@@ -82,7 +85,6 @@ const KitchenProfile = () => {
       }
       console.log('Kitchen ID:', kitchenId);
 
-      // Oshxona ma'lumotlarini olish
       const kitchenResponse = await axiosInstance.get(`${KITCHENS_URL}${kitchenId}/`);
       setKitchen(kitchenResponse.data);
       console.log('Oshxona ma’lumotlari yuklandi:', kitchenResponse.data);
@@ -104,7 +106,6 @@ const KitchenProfile = () => {
     }
   }, [token]);
 
-  // is_aktiv holatini o‘zgartirish
   const handleToggleWorkStatus = useCallback(async () => {
     if (!token || !kitchen?.id) {
       setSnackbar({
@@ -155,20 +156,20 @@ const KitchenProfile = () => {
     }
   }, [token, kitchen]);
 
-  // Komponent yuklanganda ma'lumotlarni olish
+  const handleModalOpen = () => setModalOpen(true);
+  const handleModalClose = () => setModalOpen(false);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Snackbarni yopish
   const handleCloseSnackbar = useCallback(() => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   }, []);
 
-  // Token yo‘q bo‘lsa
   if (!token) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <Alert
           severity="warning"
           action={
@@ -183,20 +184,18 @@ const KitchenProfile = () => {
     );
   }
 
-  // Yuklanmoqda holati
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
         <CircularProgress />
         <Typography ml={2}>Ma’lumotlar yuklanmoqda...</Typography>
       </Box>
     );
   }
 
-  // Xato holati
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <Alert
           severity="error"
           action={
@@ -211,20 +210,54 @@ const KitchenProfile = () => {
     );
   }
 
-  // Asosiy interfeys
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', py: 4, px: { xs: 2, sm: 4 } }}>
-        <Card elevation={3} sx={{ maxWidth: 600, mx: 'auto', borderRadius: 3, boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)' }}>
+      <Box>
+        <Card elevation={2} >
           <CardContent>
-            <Typography variant="h4" component="h1" fontWeight="bold" color="primary" mb={3}>
-              Oshxona Admin Profili
-            </Typography>
+           
 
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
+              <Button
+                variant="contained"
+                color="info"
+                onClick={handleModalOpen}
+                sx={{ borderRadius: 2 }}
+              >
+                Ma'lumotlarni ko‘rish
+              </Button>
+              <Tooltip title="Oshxonani saytda ko‘rsatish yoki yashirish uchun bosing">
+                <Button
+                  variant="contained"
+                  color={kitchen?.is_aktiv ? 'secondary' : 'primary'}
+                  startIcon={<WorkIcon />}
+                  onClick={handleToggleWorkStatus}
+                  sx={{ borderRadius: 2 }}
+                  disabled={isToggling}
+                >
+                  {isToggling ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : kitchen?.is_aktiv ? 'Ishni tugatish' : 'Ishni boshlash'}
+                </Button>
+              </Tooltip>
+            </Box>
+
+            {kitchen?.is_aktiv && <ProductsTable kitchenId={profile?.kitchen_admin_profile?.kitchen_id} />}
+          </CardContent>
+        </Card>
+
+        <Dialog open={modalOpen} onClose={handleModalClose} fullWidth maxWidth="sm">
+          <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Profil va Oshxona Ma'lumotlari
+            <Button onClick={handleModalClose} color="inherit" startIcon={<CloseIcon />}>
+              Yopish
+            </Button>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3 }}>
             {profile && (
-              <Paper elevation={0} sx={{ p: 'backgroundColor', bgcolor: 3, mb: 2, borderRadius: '2', boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.1)' }}>
-                <Box sx={{ display: 'flex', 'alignItems': 'center', mb: 2 }}>
-                  <Avatar sx={{ width: '80', 'height': '80px', 'mr': '3', 'bgcolor': 'primary.main', 'fontSize': '2rem' }}>
+              <Paper elevation={0} >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ width: 80, height: 80, mr: 3, bgcolor: 'primary.main', fontSize: '2rem' }}>
                     <PersonIcon fontSize="large" />
                   </Avatar>
                   <Box>
@@ -238,14 +271,13 @@ const KitchenProfile = () => {
                 </Box>
               </Paper>
             )}
-
             {kitchen && (
-              <Paper elevation={0} sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2 }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
                 <Typography variant="h6" fontWeight="bold" color="primary" mb={2}>
                   Oshxona Ma’lumotlari
                 </Typography>
                 <Divider sx={{ my: 2 }} />
-                <List>
+                <List disablePadding>
                   <ListItem disableGutters sx={{ py: 1.5 }}>
                     <ListItemAvatar>
                       <Avatar sx={{ bgcolor: 'secondary.light' }}>
@@ -281,27 +313,12 @@ const KitchenProfile = () => {
                       secondary={kitchen.is_aktiv ? 'Online' : 'Offline'}
                       secondaryTypographyProps={{ color: kitchen.is_aktiv ? 'success.main' : 'text.primary' }}
                     />
-                    </ListItem>
-                  </List>
-                <Divider sx={{ my: 2 }} />
-                <Tooltip title="Oshxonani saytda ko‘rsatish yoki yashirish uchun bosing">
-                  <Button
-                    variant="contained"
-                    color={kitchen.is_aktiv ? 'secondary' : 'primary'}
-                    startIcon={<WorkIcon />}
-                    onClick={handleToggleWorkStatus}
-                    sx={{ mt: 3, borderRadius: '2', width: '100%' }}
-                    disabled={isToggling}
-                  >
-                    {isToggling ? (
-                      <CircularProgress size="24" color="inherit" />
-                    ) : kitchen.is_aktiv ? 'Ishni tugatish' : 'Ishni boshlash'}
-                  </Button>
-                </Tooltip>
+                  </ListItem>
+                </List>
               </Paper>
             )}
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
 
         <Snackbar
           open={snackbar.open}
@@ -310,11 +327,11 @@ const KitchenProfile = () => {
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
           <Alert
+            onClose={handleCloseSnackbar}
             severity={snackbar.severity}
             variant="filled"
             sx={{ width: '100%' }}
             icon={<CheckIcon fontSize="inherit" />}
-            onClose={handleCloseSnackbar}
           >
             {snackbar.message}
           </Alert>
