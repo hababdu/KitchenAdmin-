@@ -11,7 +11,6 @@ const Login = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Login uchun yangi endpoint
   const API_URL = 'https://hosilbek.pythonanywhere.com/api/user/kitchen-login/';
 
   const handleChange = (e) => {
@@ -40,7 +39,6 @@ const Login = ({ onLogin }) => {
         password: formData.password,
       });
 
-      // GET so‘rovi query parametrlar bilan
       const response = await axios.get(API_URL, {
         params: {
           username: formData.username,
@@ -51,66 +49,84 @@ const Login = ({ onLogin }) => {
         },
       });
 
-      const { access, refresh, profile } = response.data;
+      console.log('Login API javobi:', JSON.stringify(response.data, null, 2));
 
-      if (!access) {
-        throw new Error('Serverdan access token olinmadi');
+      let token, profile;
+      if (response.data.token) {
+        ({ token, profile } = response.data);
+      } else if (response.data.auth_token) {
+        token = response.data.auth_token;
+        profile = response.data.profile || {};
+      } else {
+        throw new Error('Serverdan token olinmadi');
       }
 
-      // Tokenlarni va profil ma’lumotlarini localStorage’da saqlash
-      localStorage.setItem('authToken', access);
-      localStorage.setItem('refreshToken', refresh);
-      localStorage.setItem('profile', JSON.stringify(profile));
+      if (!token) {
+        throw new Error('Token mavjud emas');
+      }
 
-      // Rolni aniqlash (superadmin yoki kitchen_admin)
-      const roles = profile.user.is_superuser ? ['superadmin'] : ['kitchen_admin'];
+      // Save to localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userProfile', JSON.stringify(profile || {}));
+
+      // Determine roles based on API response
+      const roles = [];
+      if (profile?.roles?.is_courier) roles.push('courier');
+      if (profile?.roles?.is_kitchen_admin) roles.push('kitchen_admin');
+      if (profile?.roles?.is_superuser) roles.push('superadmin');
+      if (roles.length === 0) roles.push('user'); // Fallback
       localStorage.setItem('roles', JSON.stringify(roles));
+      console.log('Saqlangan localStorage:', {
+        authToken: localStorage.getItem('authToken'),
+        userProfile: localStorage.getItem('userProfile'),
+        roles: localStorage.getItem('roles'),
+      });
 
       if (onLogin) {
         onLogin();
       }
 
-      // Profil sahifasiga yo‘naltirish
-      navigate('/profile', { replace: true });
+      // Navigate based on role
+      const targetRoute = roles.includes('kitchen_admin') ? '/kitchen-profile' : '/profile';
+      navigate(targetRoute, { replace: true });
     } catch (err) {
-      let errorMessage = 'Kirish muvaffaqiyatsiz. Hisob ma’lumotlaringizni tekshiring.';
+      console.error('Login xatosi:', err.response?.data || err.message);
+      let errorMessage = 'Kirish muvaffaqiyatsiz. Hisob ma’lumotlarini tekshiring.';
       if (err.response) {
-        console.error('API xato javobi:', err.response.data);
-        if (err.response.status === 400) {
-          errorMessage = err.response.data.detail || 'Noto‘g‘ri ma’lumotlar kiritildi';
-        } else if (err.response.status === 401) {
+        const { status, data } = err.response;
+        if (status === 400) {
+          errorMessage = data.detail || 'Noto‘g‘ri ma’lumotlar kiritildi';
+        } else if (status === 401) {
           errorMessage = 'Noto‘g‘ri foydalanuvchi nomi yoki parol';
-        } else if (err.response.status === 403) {
-          errorMessage = err.response.data.detail || 'Siz oshxona admini emassiz';
-        } else if (err.response.status === 404) {
-          errorMessage = 'API topilmadi. Administrator bilan bog‘laning: support@hosilbek.uz';
+        } else if (status === 403) {
+          errorMessage = data.detail || 'Siz kuryer yoki oshxona admini sifatida ro‘yxatdan o‘tmagansiz';
+        } else if (status === 404) {
+          errorMessage = 'API topilmadi';
         } else {
           errorMessage = 'Server bilan aloqa xatosi';
         }
       } else if (err.request) {
-        errorMessage = 'Internet aloqasi yo‘q. Iltimos, tarmoqqa ulanib ko‘ring';
+        errorMessage = 'Internet aloqasi yo‘q';
       } else {
-        errorMessage = 'Noma’lum xato yuz berdi';
+        errorMessage = err.message || 'Noma’lum xato';
       }
       setError(errorMessage);
-      console.error('Xato:', err);
     } finally {
       setIsLoading(false);
     }
-  };  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">Tizimga kirish</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Iltimos, hisobingizga kirish uchun ma’lumotlaringizni kiriting
+            Hisobingizga kirish uchun ma’lumotlarni kiriting
           </p>
         </div>
         {error && (
-          <div
-            role="alert"
-            className="mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded"
-          >
+          <div className="mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg
@@ -135,10 +151,7 @@ const Login = ({ onLogin }) => {
         <div className="mt-8 bg-white py-8 px-6 shadow rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Foydalanuvchi nomi
               </label>
               <div className="mt-1">
@@ -156,10 +169,7 @@ const Login = ({ onLogin }) => {
               </div>
             </div>
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Parol
               </label>
               <div className="mt-1">
@@ -189,7 +199,8 @@ const Login = ({ onLogin }) => {
                   <div className="flex items-center">
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
                       viewBox="0 0 24 24"
                       aria-hidden="true"
                     >

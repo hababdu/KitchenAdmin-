@@ -49,33 +49,13 @@ const ProductsTable = ({ kitchenId }) => {
   const axiosInstance = axios.create({
     baseURL: API_URL,
     headers: {
-      Authorization: token ? `Bearer ${token}` : '', // Use `Bearer` (or change to `Token ${token}` if required)
+      Authorization: token ? `Token ${token}` : '',
       'Content-Type': 'application/json',
     },
   });
 
-  // Token refresh function (adjust endpoint and logic based on your backend)
-  const refreshToken = async () => {
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) throw new Error('No refresh token available');
-      const response = await axios.post(`${API_URL}api/token/refresh/`, { refresh: refreshToken });
-      const newToken = response.data.access;
-      localStorage.setItem('authToken', newToken);
-      axiosInstance.defaults.headers.Authorization = `Bearer ${newToken}`;
-      console.log('Token refreshed:', newToken);
-      return newToken;
-    } catch (err) {
-      console.error('Token refresh failed:', err);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
-      return null;
-    }
-  };
-
   // Fetch products for a specific kitchen
-  const fetchProducts = useCallback(async (retry = true) => {
+  const fetchProducts = useCallback(async () => {
     if (!token) {
       setError('Foydalanuvchi tizimga kirmagan');
       setLoading(false);
@@ -95,22 +75,20 @@ const ProductsTable = ({ kitchenId }) => {
       setProducts(Array.isArray(data) ? data : []);
       console.log('Mahsulotlar yuklandi:', data);
     } catch (err) {
-      console.error('Fetch error:', err.response?.data || err.message);
+      console.error('Fetch error:', err.message);
+      console.error('Response status:', err.response?.status);
+      console.error('Response data:', err.response?.data);
       let errorMessage = 'Mahsulotlarni yuklab bo‘lmadi';
-      if (err.response?.status === 401) {
+      if (err.message.includes('Network Error')) {
+        errorMessage = 'Tarmoq xatosi: Server bilan aloqa yo‘q yoki internet ulanmagan';
+      } else if (err.response?.status === 401) {
         errorMessage = 'Autentifikatsiya xatosi: Iltimos, qayta tizimga kiring.';
-        if (retry) {
-          const newToken = await refreshToken();
-          if (newToken) {
-            return fetchProducts(false); // Retry with new token
-          }
-        }
         localStorage.removeItem('authToken');
         window.location.href = '/login';
       } else if (err.response?.status === 404) {
         errorMessage = `Oshxona (ID: ${kitchenId}) uchun mahsulotlar topilmadi.`;
       } else {
-        errorMessage = err.response?.data?.error || err.response?.data?.detail || errorMessage;
+        errorMessage = err.response?.data?.detail || err.message;
       }
       setError(errorMessage);
     } finally {
@@ -148,22 +126,22 @@ const ProductsTable = ({ kitchenId }) => {
           severity: 'success',
         });
       } catch (err) {
-        console.error('Toggle error:', err.response?.data || err.message);
+        console.error('Toggle error:', err.message);
+        console.error('Response status:', err.response?.status);
+        console.error('Response data:', err.response?.data);
         let errorMessage = 'Holatni o‘zgartirishda xatolik';
-        if (err.response?.status === 401) {
+        if (err.message.includes('Network Error')) {
+          errorMessage = 'Tarmoq xatosi: Server bilan aloqa yo‘q yoki internet ulanmagan';
+        } else if (err.response?.status === 401) {
           errorMessage = 'Autentifikatsiya xatosi: Iltimos, qayta tizimga kiring.';
-          const newToken = await refreshToken();
-          if (newToken) {
-            return handleToggleActive(productId, isActive); // Retry
-          }
           localStorage.removeItem('authToken');
           window.location.href = '/login';
         } else if (err.response?.status === 404) {
           errorMessage = `Mahsulot (ID: ${productId}) oshxonada (ID: ${kitchenId}) topilmadi.`;
         } else if (err.response?.status === 400) {
-          errorMessage = err.response?.data?.error || 'Noto‘g‘ri so‘rov ma‘lumotlari';
+          errorMessage = err.response?.data?.detail || 'Noto‘g‘ri so‘rov ma‘lumotlari';
         } else {
-          errorMessage = err.response?.data?.error || err.response?.data?.detail || errorMessage;
+          errorMessage = err.response?.data?.detail || err.message;
         }
         setSnackbar({
           open: true,

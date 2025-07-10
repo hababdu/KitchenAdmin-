@@ -49,10 +49,10 @@ const KitchenProfile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const token = localStorage.getItem('authToken');
   const PROFILE_URL = 'https://hosilbek.pythonanywhere.com/api/user/me/';
-  const KITCHENS_URL = 'https://hosilbek.pythonanywhere.com/api/user/kitchens/';
+  const KITCHENS_URL = 'https://hosilbek.pythonanywhere.com/api/kitchens/'; // Yangi endpoint sinov uchun
 
   const axiosInstance = axios.create({
-    headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
+    headers: { Authorization: token ? `Token ${token}` : '', 'Content-Type': 'application/json' },
   });
 
   const fetchData = useCallback(async () => {
@@ -66,6 +66,7 @@ const KitchenProfile = () => {
       setLoading(true);
       setError(null);
 
+      console.log('Fetching profile with token:', token);
       const profileResponse = await axiosInstance.get(PROFILE_URL);
       const userProfile = profileResponse.data;
       if (!userProfile.roles?.is_kitchen_admin) {
@@ -89,16 +90,20 @@ const KitchenProfile = () => {
       setKitchen(kitchenResponse.data);
       console.log('Oshxona ma’lumotlari yuklandi:', kitchenResponse.data);
     } catch (err) {
-      console.error('Fetch error:', err.response?.data || err.message);
+      console.error('Fetch error:', err.message);
+      console.error('Response status:', err.response?.status);
+      console.error('Response data:', err.response?.data);
       let errorMessage = 'Ma’lumotlarni yuklashda xatolik';
-      if (err.response?.status === 401) {
+      if (err.message.includes('Network Error')) {
+        errorMessage = 'Tarmoq xatosi: Server bilan aloqa yo‘q yoki internet ulanmagan';
+      } else if (err.response?.status === 401) {
         errorMessage = 'Autentifikatsiya xatosi: Iltimos, qayta tizimga kiring.';
         localStorage.clear();
         window.location.href = '/login';
       } else if (err.response?.status === 404) {
-        errorMessage = 'Oshxona topilmadi. Administrator bilan bog‘laning.';
+        errorMessage = `Oshxona (ID: ${userProfile?.kitchen_admin_profile?.kitchen_id || 'noma’lum'}) topilmadi. Administrator bilan bog‘laning.`;
       } else {
-        errorMessage = err.response?.data?.detail || err.response?.data?.message || errorMessage;
+        errorMessage = err.response?.data?.detail || err.message;
       }
       setError(errorMessage);
     } finally {
@@ -133,18 +138,18 @@ const KitchenProfile = () => {
       });
     } catch (err) {
       console.error('PATCH error:', err);
-      console.error('Response data:', err.response?.data);
       console.error('Response status:', err.response?.status);
+      console.error('Response data:', err.response?.data);
       let errorMessage = 'Holatni o‘zgartirishda xatolik';
-      if (err.code === 'ERR_INTERNET_DISCONNECTED') {
-        errorMessage = 'Internet ulanishingiz yo‘q. Iltimos, tarmoqni tekshiring.';
+      if (err.message.includes('Network Error')) {
+        errorMessage = 'Tarmoq xatosi: Server bilan aloqa yo‘q yoki internet ulanmagan';
       } else if (err.response?.status === 401) {
         errorMessage = 'Autentifikatsiya xatosi: Iltimos, qayta tizimga kiring.';
         window.location.href = '/login';
       } else if (err.response?.status === 404) {
         errorMessage = `Oshxona (ID: ${kitchen.id}) topilmadi.`;
       } else {
-        errorMessage = err.response?.data?.message || err.response?.data?.detail || errorMessage;
+        errorMessage = err.response?.data?.detail || err.message;
       }
       setSnackbar({
         open: true,
@@ -186,7 +191,7 @@ const KitchenProfile = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <CircularProgress />
         <Typography ml={2}>Ma’lumotlar yuklanmoqda...</Typography>
       </Box>
@@ -213,10 +218,8 @@ const KitchenProfile = () => {
   return (
     <ThemeProvider theme={theme}>
       <Box>
-        <Card elevation={2} >
+        <Card elevation={2}>
           <CardContent>
-           
-
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
               <Button
                 variant="contained"
@@ -255,7 +258,7 @@ const KitchenProfile = () => {
           </DialogTitle>
           <DialogContent sx={{ pt: 3 }}>
             {profile && (
-              <Paper elevation={0} >
+              <Paper elevation={0}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <Avatar sx={{ width: 80, height: 80, mr: 3, bgcolor: 'primary.main', fontSize: '2rem' }}>
                     <PersonIcon fontSize="large" />

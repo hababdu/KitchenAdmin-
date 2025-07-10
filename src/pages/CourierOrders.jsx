@@ -5,8 +5,8 @@ import {
   Box, Typography, CircularProgress, Alert, Stack, Button, Card, CardContent,
   Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   InputAdornment, IconButton, ThemeProvider, createTheme, useMediaQuery,
-  Tabs, Tab, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, Avatar, Divider
+  Tabs, Tab, FormControlLabel, Switch, Table, TableContainer, TableHead,
+  TableBody, TableRow, TableCell, Paper, Avatar, Divider
 } from '@mui/material';
 import {
   Refresh, Edit, Timer, ArrowBack, AccessTime, AssignmentReturn, Person,
@@ -100,6 +100,8 @@ const CourierOrders = () => {
   const [activeTab, setActiveTab] = useState(0);
   const audioRef = useRef(null);
 
+  const token = localStorage.getItem('authToken');
+
   // Initialize audio
   const initializeAudio = () => {
     try {
@@ -107,6 +109,7 @@ const CourierOrders = () => {
       audio.volume = 1;
       audio.load();
       audioRef.current = audio;
+      console.log('Audio initialized successfully');
     } catch (err) {
       console.error('Audio initialization error:', err);
       setError('Ovoz faylini yuklashda xato.');
@@ -130,12 +133,12 @@ const CourierOrders = () => {
     return () => {
       events.forEach(event => window.removeEventListener(event, handleInteraction));
     };
-  }, []);
+  }, [userInteracted]);
 
-  // Fetch orders
+  // Check token and fetch orders
   const fetchOrders = async () => {
-    const token = localStorage.getItem('authToken');
     if (!token) {
+      console.log('No token found, redirecting to login');
       setError('Tizimga kirish talab qilinadi');
       navigate('/login', { replace: true });
       setLoading(false);
@@ -144,10 +147,12 @@ const CourierOrders = () => {
 
     try {
       setLoading(true);
+      console.log('Fetching orders with token:', token);
       const response = await axios.get(ORDERS_API, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Token ${token}` }, // Changed from Bearer to Token
       });
 
+      console.log('Orders API response:', JSON.stringify(response.data, null, 2));
       const ordersData = Array.isArray(response.data) ? response.data : [];
       const buyurtmaTushdiOrders = ordersData.filter(o => o.status === 'buyurtma_tushdi');
 
@@ -157,6 +162,7 @@ const CourierOrders = () => {
         if (soundEnabled && userInteracted && audioRef.current) {
           try {
             await audioRef.current.play();
+            console.log('Sound played for new orders');
           } catch (err) {
             console.error('Sound playback error:', err);
             setError('Ovoz ijro etilmadi. Audio faylni tekshiring.');
@@ -172,15 +178,23 @@ const CourierOrders = () => {
     } catch (err) {
       let errorMessage = 'Ma\'lumotlarni olishda xato';
       if (err.response) {
+        console.error('API error:', {
+          status: err.response.status,
+          data: err.response.data,
+        });
         if (err.response.status === 401) {
           errorMessage = 'Sessiya tugagan. Qayta kiring';
           localStorage.removeItem('authToken');
+          localStorage.removeItem('userProfile');
+          localStorage.removeItem('roles');
           navigate('/login', { replace: true });
         } else {
           errorMessage = err.response.data?.detail || err.response.data?.message || errorMessage;
         }
       } else if (err.request) {
         errorMessage = 'Internet aloqasi yo\'q';
+      } else {
+        errorMessage = err.message || 'Noma\'lum xato';
       }
       setError(errorMessage);
       console.error('Fetch orders error:', err);
@@ -211,8 +225,8 @@ const CourierOrders = () => {
     }
 
     const formattedTime = `00:${String(minutes).padStart(2, '0')}`;
-    const token = localStorage.getItem('authToken');
     try {
+      console.log('Updating kitchen time:', { orderId: currentOrder.id, kitchen_time: formattedTime });
       await axios.patch(
         `${ORDERS_API}${currentOrder.id}/`,
         { 
@@ -220,11 +234,13 @@ const CourierOrders = () => {
           kitchen_time_set_at: new Date().toISOString(),
           status: 'oshxona_vaqt_belgiladi'
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Token ${token}` } } // Changed from Bearer to Token
       );
       setEditDialogOpen(false);
       fetchOrders();
+      setSuccess('Vaqt muvaffaqiyatli yangilandi!');
     } catch (err) {
+      console.error('Update kitchen time error:', err.response?.data || err.message);
       setDialogError(err.response?.data?.detail || 'Vaqtni yangilashda xato');
     }
   };
@@ -267,13 +283,22 @@ const CourierOrders = () => {
   const acceptedOrders = orders.filter(o => o.status === 'kuryer_oldi');
   const returnedOrders = orders.filter(o => o.status === 'qaytarildi');
 
-  // Fetch orders on mount and every 30 seconds
+  // Fetch orders on mount and every 10 seconds
   useEffect(() => {
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
+    if (token) {
+      console.log('Token found, fetching orders');
+      fetchOrders();
+      const interval = setInterval(fetchOrders, 10000);
+      return () => {
+        console.log('Cleaning up interval');
+        clearInterval(interval);
+      };
+    } else {
+      console.log('No token, redirecting to login');
+      setError('Tizimga kirish talab qilinadi');
+      navigate('/login', { replace: true });
+    }
+  }, [token, navigate]);
 
   if (loading && orders.length === 0) {
     return (
@@ -330,7 +355,7 @@ const CourierOrders = () => {
           <Tab label={`(${newOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
           <Tab label={`(${timeSetOrders.length})`} icon={<Timer fontSize="small" />} iconPosition="start" />
           <Tab label={`(${acceptedOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
-          <Tab label={` (${returnedOrders.length})`} icon={<AssignmentReturn fontSize="small" />} iconPosition="start" />
+          <Tab label={`(${returnedOrders.length})`} icon={<AssignmentReturn fontSize="small" />} iconPosition="start" />
         </Tabs>
 
         {/* Orders List */}
@@ -552,6 +577,7 @@ const CourierOrders = () => {
 
         {/* Notifications */}
         <Snackbar
+        
           open={!!error}
           autoHideDuration={6000}
           onClose={() => setError('')}
