@@ -49,7 +49,7 @@ const KitchenProfile = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const token = localStorage.getItem('authToken');
   const PROFILE_URL = 'https://hosilbek.pythonanywhere.com/api/user/me/';
-  const KITCHENS_URL = 'https://hosilbek.pythonanywhere.com/api/kitchens/'; // Yangi endpoint sinov uchun
+  const KITCHENS_URL = 'https://hosilbek.pythonanywhere.com/api/user/kitchens/'; // To‘g‘ri endpointga qaytdik
 
   const axiosInstance = axios.create({
     headers: { Authorization: token ? `Token ${token}` : '', 'Content-Type': 'application/json' },
@@ -80,7 +80,7 @@ const KitchenProfile = () => {
 
       const kitchenId = userProfile.kitchen_admin_profile?.kitchen_id;
       if (!kitchenId) {
-        setError('Oshxona ID si topilmadi. Administrator bilan bog‘laning.');
+        setError('Oshxona ID si profil ma’lumotlarida topilmadi. Administrator bilan bog‘laning.');
         setLoading(false);
         return;
       }
@@ -112,13 +112,21 @@ const KitchenProfile = () => {
   }, [token]);
 
   const handleToggleWorkStatus = useCallback(async () => {
-    if (!token || !kitchen?.id) {
+    if (!token) {
       setSnackbar({
         open: true,
-        message: !token ? 'Foydalanuvchi tizimga kirmagan.' : 'Oshxona ID si topilmadi.',
+        message: 'Foydalanuvchi tizimga kirmagan.',
         severity: 'error',
       });
-      if (!token) window.location.href = '/login';
+      window.location.href = '/login';
+      return;
+    }
+    if (!kitchen?.id) {
+      setSnackbar({
+        open: true,
+        message: 'Oshxona ma’lumotlari yuklanmadi yoki ID topilmadi. Qayta urinib ko‘ring yoki administrator bilan bog‘laning.',
+        severity: 'error',
+      });
       return;
     }
     const newStatus = !kitchen.is_aktiv;
@@ -147,7 +155,7 @@ const KitchenProfile = () => {
         errorMessage = 'Autentifikatsiya xatosi: Iltimos, qayta tizimga kiring.';
         window.location.href = '/login';
       } else if (err.response?.status === 404) {
-        errorMessage = `Oshxona (ID: ${kitchen.id}) topilmadi.`;
+        errorMessage = `Oshxona (ID: ${kitchen.id}) topilmadi. Administrator bilan bog‘laning.`;
       } else {
         errorMessage = err.response?.data?.detail || err.message;
       }
@@ -236,7 +244,7 @@ const KitchenProfile = () => {
                   startIcon={<WorkIcon />}
                   onClick={handleToggleWorkStatus}
                   sx={{ borderRadius: 2 }}
-                  disabled={isToggling}
+                  disabled={isToggling || !kitchen?.id}
                 >
                   {isToggling ? (
                     <CircularProgress size={24} color="inherit" />
