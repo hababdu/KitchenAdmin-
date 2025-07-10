@@ -6,11 +6,15 @@ import {
   Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   InputAdornment, IconButton, ThemeProvider, createTheme, useMediaQuery,
   Tabs, Tab, FormControlLabel, Switch, Table, TableContainer, TableHead,
-  TableBody, TableRow, TableCell, Paper, Avatar, Divider
+  TableBody, TableRow, TableCell, Paper, Avatar, Divider, Badge, Chip,
+  Tooltip, Menu, MenuItem, ListItemIcon, Fab, useScrollTrigger, Zoom,
+  Grid
 } from '@mui/material';
 import {
   Refresh, Edit, Timer, ArrowBack, AccessTime, AssignmentReturn, Person,
-  Phone, LocationOn, Payment, Restaurant, Assignment
+  Phone, LocationOn, Payment, Restaurant, Assignment, Notifications,
+  MoreVert, CheckCircle, Cancel, DirectionsBike, DoneAll, FilterList,
+  KeyboardArrowUp
 } from '@mui/icons-material';
 
 // Audio file
@@ -20,48 +24,100 @@ import newOrderSound from '../assets/notification.mp3';
 const BASE_URL = 'https://hosilbek.pythonanywhere.com';
 const ORDERS_API = `${BASE_URL}/api/user/orders/`;
 
-// Responsive theme
+// Custom theme with modern colors
 const theme = createTheme({
   palette: {
-    primary: { main: '#0288d1' },
-    error: { main: '#d32f2f' },
-    success: { main: '#388e3c' },
-    warning: { main: '#f57c00' },
-    background: { default: '#f4f6f8', paper: '#ffffff' },
-    text: { primary: '#212121', secondary: '#757575' },
+    primary: { main: '#4361ee' },
+    secondary: { main: '#3f37c9' },
+    error: { main: '#f72585' },
+    success: { main: '#4cc9f0' },
+    warning: { main: '#f8961e' },
+    info: { main: '#4895ef' },
+    background: { 
+      default: '#f8f9fa', 
+      paper: '#ffffff' 
+    },
+    text: { 
+      primary: '#212529', 
+      secondary: '#6c757d' 
+    },
   },
   typography: {
-    fontFamily: 'Roboto, sans-serif',
-    h5: { fontWeight: 700, fontSize: '1.4rem' },
-    subtitle1: { fontWeight: 600, fontSize: '1rem' },
-    body1: { fontSize: '0.95rem' },
-    body2: { fontSize: '0.9rem' },
-    caption: { fontSize: '0.85rem' },
+    fontFamily: '"Inter", "Roboto", sans-serif',
+    h5: { 
+      fontWeight: 700, 
+      fontSize: '1.5rem',
+      letterSpacing: '-0.5px'
+    },
+    subtitle1: { 
+      fontWeight: 600, 
+      fontSize: '1.1rem',
+      letterSpacing: '-0.2px'
+    },
+    body1: { 
+      fontSize: '0.95rem',
+      lineHeight: 1.6 
+    },
+    body2: { 
+      fontSize: '0.9rem',
+      lineHeight: 1.5 
+    },
+    caption: { 
+      fontSize: '0.85rem',
+      color: '#6c757d'
+    },
+    button: {
+      textTransform: 'none',
+      fontWeight: 600
+    }
+  },
+  shape: {
+    borderRadius: 12
   },
   components: {
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '12px',
-          boxShadow: '0 3px 8px rgba(0,0,0,0.1)',
-          marginBottom: '12px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 6px 16px rgba(0,0,0,0.12)'
+          },
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '8px',
+          borderRadius: '10px',
           fontSize: '0.95rem',
           fontWeight: '600',
-          textTransform: 'none',
           padding: '10px 20px',
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none'
+          }
         },
+        contained: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none'
+          }
+        }
       },
     },
     MuiDialog: {
       styleOverrides: { 
-        paper: { borderRadius: '12px', padding: '16px' } 
+        paper: { 
+          borderRadius: '16px', 
+          padding: '20px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+        } 
       },
     },
     MuiTab: {
@@ -71,22 +127,73 @@ const theme = createTheme({
           fontWeight: '600', 
           fontSize: '0.9rem',
           minHeight: '48px',
-          padding: '0 12px',
+          padding: '0 16px',
+          minWidth: 'unset'
         },
       },
     },
     MuiTableCell: {
       styleOverrides: {
-        root: { padding: '8px', fontSize: '0.9rem' },
-        head: { fontWeight: 'bold', backgroundColor: '#f5f5f5' },
+        root: { 
+          padding: '12px',
+          fontSize: '0.9rem',
+          borderBottom: '1px solid rgba(0,0,0,0.05)'
+        },
+        head: { 
+          fontWeight: 'bold', 
+          backgroundColor: '#f8f9fa',
+          color: '#212529'
+        },
       },
     },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 500,
+          fontSize: '0.75rem'
+        }
+      }
+    }
   },
 });
+
+// Scroll to top button component
+function ScrollTop(props) {
+  const { children } = props;
+  const trigger = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 100,
+  });
+
+  const handleClick = (event) => {
+    const anchor = (event.target.ownerDocument || document).querySelector(
+      '#back-to-top-anchor',
+    );
+    if (anchor) {
+      anchor.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  };
+
+  return (
+    <Zoom in={trigger}>
+      <Box
+        onClick={handleClick}
+        role="presentation"
+        sx={{ position: 'fixed', bottom: 32, right: 32 }}
+      >
+        {children}
+      </Box>
+    </Zoom>
+  );
+}
 
 const CourierOrders = () => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -98,6 +205,8 @@ const CourierOrders = () => {
   const [userInteracted, setUserInteracted] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [newOrderCount, setNewOrderCount] = useState(0);
   const audioRef = useRef(null);
 
   const token = localStorage.getItem('authToken');
@@ -106,10 +215,9 @@ const CourierOrders = () => {
   const initializeAudio = () => {
     try {
       const audio = new Audio(newOrderSound);
-      audio.volume = 1;
+      audio.volume = 0.5;
       audio.load();
       audioRef.current = audio;
-      console.log('Audio initialized successfully');
     } catch (err) {
       console.error('Audio initialization error:', err);
       setError('Ovoz faylini yuklashda xato.');
@@ -123,7 +231,6 @@ const CourierOrders = () => {
     const handleInteraction = () => {
       if (!userInteracted) {
         setUserInteracted(true);
-        console.log('User interacted with the page');
       }
     };
 
@@ -138,7 +245,6 @@ const CourierOrders = () => {
   // Check token and fetch orders
   const fetchOrders = async () => {
     if (!token) {
-      console.log('No token found, redirecting to login');
       setError('Tizimga kirish talab qilinadi');
       navigate('/login', { replace: true });
       setLoading(false);
@@ -147,28 +253,30 @@ const CourierOrders = () => {
 
     try {
       setLoading(true);
-      console.log('Fetching orders with token:', token);
       const response = await axios.get(ORDERS_API, {
-        headers: { Authorization: `Token ${token}` }, // Changed from Bearer to Token
+        headers: { Authorization: `Token ${token}` },
       });
 
-      console.log('Orders API response:', JSON.stringify(response.data, null, 2));
       const ordersData = Array.isArray(response.data) ? response.data : [];
       const buyurtmaTushdiOrders = ordersData.filter(o => o.status === 'buyurtma_tushdi');
 
-      // Play sound and show notification if there are buyurtma_tushdi orders
+      // Calculate new orders since last fetch
+      if (orders.length > 0) {
+        const newOrders = buyurtmaTushdiOrders.filter(newOrder => 
+          !orders.some(oldOrder => oldOrder.id === newOrder.id)
+        );
+        setNewOrderCount(newOrders.length);
+      }
+
+      // Play sound and show notification if there are new buyurtma_tushdi orders
       if (buyurtmaTushdiOrders.length > 0) {
         setSuccess(`${buyurtmaTushdiOrders.length} ta yangi buyurtma!`);
         if (soundEnabled && userInteracted && audioRef.current) {
           try {
             await audioRef.current.play();
-            console.log('Sound played for new orders');
           } catch (err) {
             console.error('Sound playback error:', err);
-            setError('Ovoz ijro etilmadi. Audio faylni tekshiring.');
           }
-        } else {
-          console.log('Sound not played:', { soundEnabled, userInteracted, audioLoaded: !!audioRef.current });
         }
       } else {
         setSuccess('');
@@ -178,10 +286,6 @@ const CourierOrders = () => {
     } catch (err) {
       let errorMessage = 'Ma\'lumotlarni olishda xato';
       if (err.response) {
-        console.error('API error:', {
-          status: err.response.status,
-          data: err.response.data,
-        });
         if (err.response.status === 401) {
           errorMessage = 'Sessiya tugagan. Qayta kiring';
           localStorage.removeItem('authToken');
@@ -197,7 +301,6 @@ const CourierOrders = () => {
         errorMessage = err.message || 'Noma\'lum xato';
       }
       setError(errorMessage);
-      console.error('Fetch orders error:', err);
     } finally {
       setLoading(false);
     }
@@ -226,7 +329,6 @@ const CourierOrders = () => {
 
     const formattedTime = `00:${String(minutes).padStart(2, '0')}`;
     try {
-      console.log('Updating kitchen time:', { orderId: currentOrder.id, kitchen_time: formattedTime });
       await axios.patch(
         `${ORDERS_API}${currentOrder.id}/`,
         { 
@@ -234,13 +336,12 @@ const CourierOrders = () => {
           kitchen_time_set_at: new Date().toISOString(),
           status: 'oshxona_vaqt_belgiladi'
         },
-        { headers: { Authorization: `Token ${token}` } } // Changed from Bearer to Token
+        { headers: { Authorization: `Token ${token}` } }
       );
       setEditDialogOpen(false);
       fetchOrders();
       setSuccess('Vaqt muvaffaqiyatli yangilandi!');
     } catch (err) {
-      console.error('Update kitchen time error:', err.response?.data || err.message);
       setDialogError(err.response?.data?.detail || 'Vaqtni yangilashda xato');
     }
   };
@@ -263,267 +364,437 @@ const CourierOrders = () => {
   // Format timestamp
   const formatTimestamp = timestamp => {
     if (!timestamp) return 'Noma\'lum';
-    return new Date(timestamp).toLocaleString('uz-UZ');
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) + 
+           ', ' + date.toLocaleDateString('uz-UZ');
   };
 
-  // Status label
-  const getStatusLabel = status => {
+  // Status label with colors
+  const getStatusLabel = (status, isChip = false) => {
     const statusMap = {
-      buyurtma_tushdi: 'Yangi',
-      oshxona_vaqt_belgiladi: 'Vaqt belgilangan',
-      kuryer_oldi: 'Kuryer oldi',
-      qaytarildi: 'Qaytarildi',
+      buyurtma_tushdi: { label: 'Yangi', color: 'warning' },
+      oshxona_vaqt_belgiladi: { label: 'Vaqt belgilandi', color: 'info' },
+      kuryer_oldi: { label: 'Kuryer oldi', color: 'primary' },
+      qaytarildi: { label: 'Qaytarildi', color: 'error' },
     };
-    return statusMap[status] || status;
+    
+    const statusInfo = statusMap[status] || { label: status, color: 'default' };
+    
+    if (isChip) {
+      return (
+        <Chip 
+          label={statusInfo.label} 
+          color={statusInfo.color} 
+          size="small" 
+          sx={{ fontWeight: 600 }}
+        />
+      );
+    }
+    return statusInfo.label;
   };
 
   // Filter orders by tab
-  const newOrders = orders.filter(o => o.status === 'buyurtma_tushdi');
-  const timeSetOrders = orders.filter(o => o.status === 'oshxona_vaqt_belgiladi');
-  const acceptedOrders = orders.filter(o => o.status === 'kuryer_oldi');
-  const returnedOrders = orders.filter(o => o.status === 'qaytarildi');
+  const filteredOrders = [
+    orders.filter(o => o.status === 'buyurtma_tushdi'),
+    orders.filter(o => o.status === 'oshxona_vaqt_belgiladi'),
+    orders.filter(o => o.status === 'kuryer_oldi'),
+    orders.filter(o => o.status === 'qaytarildi')
+  ];
+
+  // Menu handlers
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   // Fetch orders on mount and every 10 seconds
   useEffect(() => {
     if (token) {
-      console.log('Token found, fetching orders');
       fetchOrders();
       const interval = setInterval(fetchOrders, 10000);
-      return () => {
-        console.log('Cleaning up interval');
-        clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     } else {
-      console.log('No token, redirecting to login');
       setError('Tizimga kirish talab qilinadi');
       navigate('/login', { replace: true });
     }
   }, [token, navigate]);
 
+  // Reset new order count after showing notification
+  useEffect(() => {
+    if (newOrderCount > 0) {
+      const timer = setTimeout(() => setNewOrderCount(0), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [newOrderCount]);
+
   if (loading && orders.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', bgcolor: 'background.default' }}>
-        <CircularProgress size={40} />
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh', 
+        bgcolor: 'background.default' 
+      }}>
+        <CircularProgress size={60} thickness={4} sx={{ color: 'primary.main' }} />
       </Box>
     );
   }
 
+  // Determine grid columns based on screen size
+  const getGridColumns = () => {
+    if (isMobile) return 1;
+    if (isTablet) return 2;
+    return 4;
+  };
+
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: isMobile ? 2 : 3, bgcolor: 'background.default', minHeight: '100vh' }}>
+      <Box sx={{ 
+        p: isMobile ? 2 : 3, 
+        bgcolor: 'background.default', 
+        minHeight: '100vh',
+        maxWidth: 1400,
+        mx: 'auto'
+      }}>
         {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
             <IconButton 
               onClick={() => navigate(-1)} 
-              sx={{ bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'white' } }}
+              sx={{ 
+                bgcolor: 'primary.light', 
+                color: 'primary.main',
+                '&:hover': { bgcolor: 'primary.main', color: 'white' }
+              }}
             >
               <ArrowBack />
             </IconButton>
-            <Typography variant="h5" color="primary.main">
-              Buyurtmalar
+            <Typography variant="h5" color="primary" fontWeight="bold">
+              Buyurtmalar Boshqaruvi
             </Typography>
           </Stack>
+          
           <Stack direction="row" alignItems="center" spacing={1}>
-            <FormControlLabel
-              control={
-                <Switch 
-                  checked={soundEnabled} 
-                  onChange={() => setSoundEnabled(prev => !prev)} 
-                  color="primary"
-                />
-              }
-              label="Ovoz"
-              sx={{ '& .MuiTypography-root': { fontSize: '0.9rem' } }}
-            />
-            <IconButton 
-              onClick={fetchOrders} 
-              sx={{ bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'white' } }}
+            <Tooltip title="Ovozni yoqish/o'chirish">
+              <FormControlLabel
+                control={
+                  <Switch 
+                    checked={soundEnabled} 
+                    onChange={() => setSoundEnabled(prev => !prev)} 
+                    color="primary"
+                    size="small"
+                  />
+                }
+                label={soundEnabled ? 'Ovoz yoqilgan' : 'Ovoz o\'chirilgan'}
+                labelPlacement="start"
+                sx={{ 
+                  '& .MuiTypography-root': { 
+                    fontSize: '0.8rem',
+                    color: 'text.secondary'
+                  } 
+                }}
+              />
+            </Tooltip>
+            
+            <Tooltip title="Yangilash">
+              <IconButton 
+                onClick={fetchOrders} 
+                sx={{ 
+                  bgcolor: 'primary.light', 
+                  color: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                }}
+              >
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+            
+            <IconButton
+              aria-label="more"
+              aria-controls="long-menu"
+              aria-haspopup="true"
+              onClick={handleMenuOpen}
+              sx={{ 
+                bgcolor: 'background.paper',
+                boxShadow: 1,
+                '&:hover': { bgcolor: 'action.hover' }
+              }}
             >
-              <Refresh />
+              <MoreVert />
             </IconButton>
+            
+            <Menu
+              id="long-menu"
+              anchorEl={anchorEl}
+              keepMounted
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              PaperProps={{
+                style: {
+                  width: '200px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  borderRadius: '12px'
+                },
+              }}
+            >
+              <MenuItem onClick={() => { handleMenuClose(); }}>
+                <ListItemIcon>
+                  <FilterList fontSize="small" />
+                </ListItemIcon>
+                Filtrlash
+              </MenuItem>
+              <MenuItem onClick={() => { handleMenuClose(); }}>
+                <ListItemIcon>
+                  <Notifications fontSize="small" />
+                </ListItemIcon>
+                Bildirishnomalar
+              </MenuItem>
+            </Menu>
           </Stack>
         </Stack>
 
-        {/* Tabs */}
+        {/* Tabs with badges */}
         <Tabs
           value={activeTab}
           onChange={(e, newValue) => setActiveTab(newValue)}
           variant={isMobile ? 'scrollable' : 'fullWidth'}
-          sx={{ mb: 2, bgcolor: 'white', borderRadius: '12px' }}
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{ 
+            mb: 3, 
+            bgcolor: 'background.paper', 
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0'
+            }
+          }}
         >
-          <Tab label={`(${newOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
-          <Tab label={`(${timeSetOrders.length})`} icon={<Timer fontSize="small" />} iconPosition="start" />
-          <Tab label={`(${acceptedOrders.length})`} icon={<AccessTime fontSize="small" />} iconPosition="start" />
-          <Tab label={`(${returnedOrders.length})`} icon={<AssignmentReturn fontSize="small" />} iconPosition="start" />
+          <Tab 
+            label={
+              <Badge 
+                badgeContent={filteredOrders[0].length} 
+                color="warning" 
+                max={99}
+                sx={{ '& .MuiBadge-badge': { right: -10 } }}
+              >
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <AccessTime fontSize="small" />
+                  <span>Yangi</span>
+                </Stack>
+              </Badge>
+            }
+            sx={{ minWidth: 'unset', px: 2 }}
+          />
+          <Tab 
+            label={
+              <Badge 
+                badgeContent={filteredOrders[1].length} 
+                color="info" 
+                max={99}
+                sx={{ '& .MuiBadge-badge': { right: -10 } }}
+              >
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Timer fontSize="small" />
+                  <span>Jarayonda</span>
+                </Stack>
+              </Badge>
+            }
+            sx={{ minWidth: 'unset', px: 2 }}
+          />
+          <Tab 
+            label={
+              <Badge 
+                badgeContent={filteredOrders[2].length} 
+                color="primary" 
+                max={99}
+                sx={{ '& .MuiBadge-badge': { right: -10 } }}
+              >
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <DirectionsBike fontSize="small" />
+                  <span>Yetkazilmoqda</span>
+                </Stack>
+              </Badge>
+            }
+            sx={{ minWidth: 'unset', px: 2 }}
+          />
+          <Tab 
+            label={
+              <Badge 
+                badgeContent={filteredOrders[3].length} 
+                color="error" 
+                max={99}
+                sx={{ '& .MuiBadge-badge': { right: -10 } }}
+              >
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <AssignmentReturn fontSize="small" />
+                  <span>Yakunlangan</span>
+                </Stack>
+              </Badge>
+            }
+            sx={{ minWidth: 'unset', px: 2 }}
+          />
         </Tabs>
 
-        {/* Orders List */}
-        <Box>
-          {[
-            newOrders,
-            timeSetOrders,
-            acceptedOrders,
-            returnedOrders
-          ][activeTab].length === 0 ? (
-            <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mt: 4 }}>
-              Bu bo'limda buyurtmalar mavjud emas
-            </Typography>
+        {/* Orders Grid */}
+        <Box id="back-to-top-anchor">
+          {filteredOrders[activeTab].length === 0 ? (
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              minHeight: '300px',
+              textAlign: 'center',
+              p: 3,
+              bgcolor: 'background.paper',
+              borderRadius: '16px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+              <img 
+                src="/empty-state.svg" 
+                alt="No orders" 
+                style={{ width: '150px', opacity: 0.7, marginBottom: '20px' }}
+              />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Buyurtmalar topilmadi
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '300px' }}>
+                Ushbu bo'limda hozircha buyurtmalar mavjud emas. Yangi buyurtmalar avtomatik ravishda shu yerda ko'rinadi.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                startIcon={<Refresh />} 
+                onClick={fetchOrders}
+                sx={{ mt: 2 }}
+              >
+                Yangilash
+              </Button>
+            </Box>
           ) : (
-            [
-              newOrders,
-              timeSetOrders,
-              acceptedOrders,
-              returnedOrders
-            ][activeTab].map(order => (
-              <Card key={order.id} sx={{ mb: 2 }}>
-                <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    Buyurtma #{order.id}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Status: {getStatusLabel(order.status)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Umumiy narx: {calculateTotalPrice(order.items)} so'm
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
-                    <Timer fontSize="small" /> Oshxona vaqti: {formatTime(order.kitchen_time)}
-                  </Typography>
+            <Grid container spacing={3}>
+              {filteredOrders[activeTab].map(order => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={order.id}>
+                  <Card>
+                    <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
+                      {/* Order Header */}
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            #{order.id}
+                            {getStatusLabel(order.status, true)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatTimestamp(order.created_at)}
+                          </Typography>
+                        </Box>
+                        <Typography variant="h6" color="primary" fontWeight="bold">
+                          {calculateTotalPrice(order.items)} so'm
+                        </Typography>
+                      </Stack>
 
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                    Buyurtma Tafsilotlari
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Person fontSize="small" color="action" />
-                      <Typography variant="body2">Mijoz: {order.user?.name || 'Noma\'lum'}</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Phone fontSize="small" color="action" />
-                      <Typography
-                        color='blue'
-                        variant="body2"
-                        component="a"
-                        href={`tel:${order.contact_number}`}
-                        sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { textDecoration: 'underline' } }}
-                      >
-                        Telefon: {order.contact_number || 'Noma\'lum'}
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <LocationOn fontSize="small" color="action" />
-                      <Typography variant="body2">Manzil: {order.address || 'Noma\'lum'}</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Payment fontSize="small" color="action" />
-                      <Typography variant="body2">To'lov turi: {order.payment === 'naqd' ? 'Naqd' : 'Karta'}</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Restaurant fontSize="small" color="action" />
-                      <Typography variant="body2">Restoran: {order.kitchen?.name || 'Noma\'lum'}</Typography>
-                    </Stack>
-                    {order.notes && (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Assignment fontSize="small" color="action" />
-                        <Typography variant="body2">Eslatmalar: {order.notes}</Typography>
-                      </Stack>
-                    )}
-                    {order.status === 'oshxona_vaqt_belgiladi' && (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Timer fontSize="small" color="action" />
-                        <Typography variant="body2">Vaqt belgilandi: {formatTimestamp(order.kitchen_time_set_at)}</Typography>
-                      </Stack>
-                    )}
-                    {order.status === 'kuryer_oldi' && (
-                      <>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Person fontSize="small" color="action" />
-                          <Typography variant="body2">Kuryer: {order.courier?.user?.username || 'Noma\'lum'}</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Phone fontSize="small" color="action" />
+                      <Divider sx={{ my: 1.5, opacity: 0.5 }} />
+
+                      {/* Customer Info */}
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Mijoz
+                        </Typography>
+                        <Stack spacing={1}>
+                          <Typography variant="body2" noWrap>
+                            <Person fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            {order.user?.name || 'Noma\'lum'}
+                          </Typography>
                           <Typography
                             variant="body2"
                             component="a"
-                            href={`tel:${order.courier?.phone_number}`}
-                            sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { textDecoration: 'underline' } }}
+                            href={`tel:${order.contact_number}`}
+                            sx={{ 
+                              textDecoration: 'none', 
+                              color: 'primary.main',
+                              '&:hover': { textDecoration: 'underline' },
+                              noWrap: true
+                            }}
                           >
-                            Kuryer raqami: {order.courier?.phone_number || 'Noma\'lum'}
+                            <Phone fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            {order.contact_number || 'Noma\'lum'}
+                          </Typography>
+                          <Tooltip title={order.address || 'Manzil kiritilmagan'} arrow>
+                            <Typography variant="body2" noWrap>
+                              <LocationOn fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                              {order.address || 'Manzil kiritilmagan'}
+                            </Typography>
+                          </Tooltip>
+                        </Stack>
+                      </Box>
+
+                      {/* Order Details */}
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Tafsilotlar
+                        </Typography>
+                        <Stack spacing={1}>
+                          <Typography variant="body2" noWrap>
+                            <Restaurant fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            {order.kitchen?.name || 'Noma\'lum'}
+                          </Typography>
+                          <Typography variant="body2">
+                            <Payment fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            {order.payment === 'naqd' ? 'Naqd' : 'Karta orqali'}
+                          </Typography>
+                          <Typography variant="body2">
+                            <Timer fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            {formatTime(order.kitchen_time)}
                           </Typography>
                         </Stack>
-                      </>
-                    )}
-                    {order.status === 'qaytarildi' && order.return_reason && (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Assignment fontSize="small" color="action" />
-                        <Typography variant="body2">Qaytarish sababi: {order.return_reason}</Typography>
+                      </Box>
+
+                      {/* Products Summary */}
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
+                          Mahsulotlar ({order.items.length})
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          {order.items.slice(0, 3).map((item, index) => (
+                            <Typography key={index} variant="body2" noWrap>
+                              {item.quantity}x {item.product?.title || 'Noma\'lum'}
+                            </Typography>
+                          ))}
+                          {order.items.length > 3 && (
+                            <Typography variant="caption" color="text.secondary">
+                              +{order.items.length - 3} ta boshqa mahsulot
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Box>
+
+                      {/* Action Buttons */}
+                      <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                        {order.status === 'buyurtma_tushdi' && (
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<Timer />}
+                            onClick={() => openEditDialog(order)}
+                            fullWidth
+                            sx={{ py: 0.8 }}
+                          >
+                            Vaqt
+                          </Button>
+                        )}
+                      
+                        
                       </Stack>
-                    )}
-                  </Stack>
-
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                    Mahsulotlar ({order.items.length})
-                  </Typography>
-                  <TableContainer component={Paper} sx={{ maxHeight: 200, overflow: 'auto' }}>
-                    <Table size={isMobile ? 'small' : 'medium'} stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ width: isMobile ? '50px' : '60px' }}>Rasm</TableCell>
-                          <TableCell>Mahsulot</TableCell>
-                          <TableCell align="right" sx={{ width: isMobile ? '60px' : '80px' }}>Soni</TableCell>
-                          <TableCell align="right" sx={{ width: isMobile ? '80px' : '100px' }}>Narxi</TableCell>
-                          <TableCell align="right" sx={{ width: isMobile ? '80px' : '100px' }}>Umumiy</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {order.items.map((item, index) => (
-                          <TableRow key={index}>
-                            <TableCell>
-                              <Avatar
-                                variant="rounded"
-                                src={item.product?.photo ? `${BASE_URL}${item.product.photo}` : undefined}
-                                sx={{ bgcolor: 'grey.200', width: isMobile ? 32 : 40, height: isMobile ? 32 : 40 }}
-                              >
-                                <Restaurant fontSize="small" />
-                              </Avatar>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">{item.product?.title || 'Noma\'lum'}</Typography>
-                              {item.notes && (
-                                <Typography variant="caption" color="text.secondary">{item.notes}</Typography>
-                              )}
-                            </TableCell>
-                            <TableCell align="right">{item.quantity}</TableCell>
-                            <TableCell align="right">{parseFloat(item.price).toLocaleString('uz-UZ')} so'm</TableCell>
-                            <TableCell align="right">{(item.quantity * parseFloat(item.price)).toLocaleString('uz-UZ')} so'm</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-
-                  {/* Total Price */}
-                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 2, textAlign: 'right' }}>
-                    Jami summa: {calculateTotalPrice(order.items)} so'm
-                  </Typography>
-
-                  {/* Action Button */}
-                  {order.status === 'buyurtma_tushdi' && (
-                    <Button
-                      variant="contained"
-                      startIcon={<Edit />}
-                      onClick={() => openEditDialog(order)}
-                      sx={{ mt: 2, width: '100%' }}
-                    >
-                      Vaqt belgilash
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
           )}
         </Box>
 
@@ -534,69 +805,138 @@ const CourierOrders = () => {
           maxWidth="xs"
           fullWidth
         >
-          <DialogTitle sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-            Oshxona vaqtini belgilash
+          <DialogTitle sx={{ 
+            fontWeight: 'bold', 
+            color: 'primary.main',
+            borderBottom: '1px solid rgba(0,0,0,0.1)',
+            pb: 2
+          }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Timer color="primary" />
+              <span>Oshxona vaqtini belgilash</span>
+            </Stack>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ pt: 3 }}>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Buyurtma raqami: <strong>#{currentOrder?.id}</strong>
+            </Typography>
+            
             <TextField
-              label="Daqiqa"
+              label="Tayyor bo'lish vaqti"
               type="number"
               fullWidth
               value={kitchenMinutes}
               onChange={e => setKitchenMinutes(e.target.value)}
               InputProps={{ 
                 inputProps: { min: 5, max: 180 },
-                endAdornment: <InputAdornment position="end">min</InputAdornment>
+                endAdornment: <InputAdornment position="end">minut</InputAdornment>,
+                sx: { borderRadius: '10px' }
               }}
-              helperText="5-180 daqiqa"
-              size="small"
-              sx={{ mt: 2 }}
+              helperText="Iltimos, 5-180 daqiqa oralig'ida kiriting"
+              size="medium"
+              sx={{ mt: 1 }}
+              autoFocus
             />
+            
             {dialogError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
+              <Alert severity="error" sx={{ mt: 2, borderRadius: '10px' }}>
                 {dialogError}
               </Alert>
             )}
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: 3, pt: 0, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
             <Button 
               onClick={() => setEditDialogOpen(false)} 
               variant="outlined"
+              sx={{ borderRadius: '10px', px: 3 }}
             >
-              Bekor
+              Bekor qilish
             </Button>
             <Button
               variant="contained"
               onClick={handleUpdateKitchenTime}
               disabled={!kitchenMinutes}
+              sx={{ borderRadius: '10px', px: 3 }}
             >
-              Saqlash
+              Tasdiqlash
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Notifications */}
+        {/* New Order Notification */}
         <Snackbar
-        
+          open={newOrderCount > 0}
+          autoHideDuration={6000}
+          onClose={() => setNewOrderCount(0)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          sx={{ '& .MuiPaper-root': { borderRadius: '12px' } }}
+        >
+          <Alert 
+            severity="info" 
+            icon={<Notifications fontSize="large" />}
+            onClose={() => setNewOrderCount(0)}
+            sx={{ 
+              bgcolor: 'background.paper',
+              color: 'text.primary',
+              alignItems: 'center',
+              '& .MuiAlert-icon': { alignItems: 'center' }
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight="bold">
+              {newOrderCount} ta yangi buyurtma!
+            </Typography>
+            <Typography variant="body2">
+              Yangi buyurtmalarni ko'rish uchun yangilash tugmasini bosing
+            </Typography>
+          </Alert>
+        </Snackbar>
+
+        {/* Error Notification */}
+        <Snackbar
           open={!!error}
           autoHideDuration={6000}
           onClose={() => setError('')}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert severity="error" onClose={() => setError('')}>
+          <Alert 
+            severity="error" 
+            onClose={() => setError('')}
+            sx={{ 
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              alignItems: 'center'
+            }}
+          >
             {error}
           </Alert>
         </Snackbar>
+
+        {/* Success Notification */}
         <Snackbar
           open={!!success}
-          autoHideDuration={6000}
+          autoHideDuration={4000}
           onClose={() => setSuccess('')}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert severity="success" onClose={() => setSuccess('')}>
+          <Alert 
+            severity="success" 
+            onClose={() => setSuccess('')}
+            sx={{ 
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              alignItems: 'center'
+            }}
+          >
             {success}
           </Alert>
         </Snackbar>
+
+        {/* Scroll to top button */}
+        <ScrollTop>
+          <Fab color="primary" size="medium" aria-label="scroll back to top">
+            <KeyboardArrowUp />
+          </Fab>
+        </ScrollTop>
       </Box>
     </ThemeProvider>
   );
