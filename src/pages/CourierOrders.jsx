@@ -14,146 +14,113 @@ import {
   Refresh, Edit, Timer, ArrowBack, AccessTime, AssignmentReturn, Person,
   Phone, LocationOn, Payment, Restaurant, Assignment, Notifications,
   MoreVert, CheckCircle, Cancel, DirectionsBike, DoneAll, FilterList,
-  KeyboardArrowUp
+  KeyboardArrowUp, Print
 } from '@mui/icons-material';
 
 // Audio file
 import newOrderSound from '../assets/notification.mp3';
 
 // API settings
-const BASE_URL = 'https://hosilbek.pythonanywhere.com';
+const BASE_URL = 'https://hosilbek02.pythonanywhere.com';
 const ORDERS_API = `${BASE_URL}/api/user/orders/`;
 
-// Custom theme with modern colors
+// Custom theme matching CourierDashboard
 const theme = createTheme({
   palette: {
-    primary: { main: '#4361ee' },
-    secondary: { main: '#3f37c9' },
-    error: { main: '#f72585' },
-    success: { main: '#4cc9f0' },
-    warning: { main: '#f8961e' },
-    info: { main: '#4895ef' },
-    background: { 
-      default: '#f8f9fa', 
-      paper: '#ffffff' 
-    },
-    text: { 
-      primary: '#212529', 
-      secondary: '#6c757d' 
-    },
+    primary: { main: '#0288d1' },
+    secondary: { main: '#7b1fa2' },
+    error: { main: '#d32f2f' },
+    warning: { main: '#f57c00' },
+    success: { main: '#388e3c' },
+    info: { main: '#0288d1' },
+    background: { default: '#f4f6f8', paper: '#ffffff' },
+    text: { primary: '#212121', secondary: '#757575' },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", sans-serif',
-    h5: { 
-      fontWeight: 700, 
-      fontSize: '1.5rem',
-      letterSpacing: '-0.5px'
-    },
-    subtitle1: { 
-      fontWeight: 600, 
-      fontSize: '1.1rem',
-      letterSpacing: '-0.2px'
-    },
-    body1: { 
-      fontSize: '0.95rem',
-      lineHeight: 1.6 
-    },
-    body2: { 
-      fontSize: '0.9rem',
-      lineHeight: 1.5 
-    },
-    caption: { 
-      fontSize: '0.85rem',
-      color: '#6c757d'
-    },
-    button: {
-      textTransform: 'none',
-      fontWeight: 600
-    }
+    fontFamily: [
+      '"Inter"',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      'sans-serif',
+    ].join(','),
+    h5: { fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.5px' },
+    subtitle1: { fontWeight: 600, fontSize: '1rem' },
+    body1: { fontSize: '0.95rem', lineHeight: 1.6 },
+    body2: { fontSize: '0.85rem', lineHeight: 1.5 },
+    caption: { fontSize: '0.8rem', color: '#757575' },
+    button: { textTransform: 'none', fontWeight: 600 },
   },
-  shape: {
-    borderRadius: 12
-  },
+  shape: { borderRadius: 12 },
   components: {
     MuiCard: {
       styleOverrides: {
         root: {
           borderRadius: '16px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 16px rgba(0,0,0,0.12)'
+            transform: 'translateY(-4px)',
+            boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
           },
           height: '100%',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '10px',
+          borderRadius: '12px',
+          padding: '12px 24px',
           fontSize: '0.95rem',
-          fontWeight: '600',
-          padding: '10px 20px',
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: 'none'
-          }
+          fontWeight: 700,
+          textTransform: 'none',
+          boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
+          '&:hover': { boxShadow: '0 5px 10px rgba(0,0,0,0.15)' },
+          minWidth: '120px',
         },
-        contained: {
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: 'none'
-          }
-        }
       },
     },
     MuiDialog: {
-      styleOverrides: { 
-        paper: { 
-          borderRadius: '16px', 
-          padding: '20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-        } 
+      styleOverrides: {
+        paper: { borderRadius: '16px', padding: '16px' },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          borderBottom: '1px solid #e0e0e0',
+          backgroundColor: '#fff',
+          borderRadius: '12px 12px 0 0',
+          padding: '0 8px',
+        },
       },
     },
     MuiTab: {
       styleOverrides: {
-        root: { 
-          textTransform: 'none', 
-          fontWeight: '600', 
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+          padding: '12px 16px',
           fontSize: '0.9rem',
           minHeight: '48px',
-          padding: '0 16px',
-          minWidth: 'unset'
-        },
-      },
-    },
-    MuiTableCell: {
-      styleOverrides: {
-        root: { 
-          padding: '12px',
-          fontSize: '0.9rem',
-          borderBottom: '1px solid rgba(0,0,0,0.05)'
-        },
-        head: { 
-          fontWeight: 'bold', 
-          backgroundColor: '#f8f9fa',
-          color: '#212529'
+          minWidth: 'unset',
         },
       },
     },
     MuiChip: {
       styleOverrides: {
         root: {
-          fontWeight: 500,
-          fontSize: '0.75rem'
-        }
-      }
-    }
+          borderRadius: '10px',
+          fontWeight: 600,
+          padding: '6px 12px',
+          fontSize: '0.85rem',
+        },
+      },
+    },
   },
 });
 
@@ -242,6 +209,107 @@ const CourierOrders = () => {
     };
   }, [userInteracted]);
 
+  // Print receipt function
+  const printReceipt = (order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      setError('Chop etish oynasini ochib bo\'lmadi. Iltimos, brauzer sozlamalarini tekshiring.');
+      return;
+    }
+
+    const receiptContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Buyurtma #${order.id} Cheki</title>
+        <style>
+          body {
+            font-family: monospace;
+            margin: 10px;
+            font-size: 12px;
+            line-height: 1.2;
+            width: 58mm;
+          }
+          .receipt {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #000;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 3px;
+            margin-bottom: 5px;
+          }
+          .header h2 {
+            font-size: 14px;
+            margin: 0;
+          }
+          .header p {
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          .info p {
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          .item {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          .total {
+            font-weight: bold;
+            border-top: 1px dashed #000;
+            padding-top: 3px;
+            margin-top: 5px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <h2>Buyurtma #${order.id}</h2>
+            <p>${order.kitchen?.name || 'Noma\'lum'}</p>
+            <p>${formatTimestamp(order.created_at)}</p>
+          </div>
+          <div class="info">
+            <p>Mijoz: ${order.user || 'Noma\'lum'}</p>
+            <p>Telefon: ${order.contact_number || 'Noma\'lum'}</p>
+            <p>To'lov: ${order.payment === 'naqd' ? 'Naqd' : 'Karta'}</p>
+            <p>Vaqt: ${formatTime(order.kitchen_time)}</p>
+          </div>
+          <div class="items">
+            ${order.items.map(item => `
+              <div class="item">
+                <span>${item.quantity}x ${item.product?.title || 'Noma\'lum'}</span>
+                <span>${(item.quantity * parseFloat(item.price)).toLocaleString('uz-UZ')} so'm</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="total">
+            <span>Jami:</span>
+            <span>${calculateTotalPrice(order.items)} so'm</span>
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(() => window.close(), 1000);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(receiptContent);
+    printWindow.document.close();
+  };
+
   // Check token and fetch orders
   const fetchOrders = async () => {
     if (!token) {
@@ -253,19 +321,26 @@ const CourierOrders = () => {
 
     try {
       setLoading(true);
+      console.log('Fetching orders from:', ORDERS_API); // Debug log
       const response = await axios.get(ORDERS_API, {
         headers: { Authorization: `Token ${token}` },
       });
 
       const ordersData = Array.isArray(response.data) ? response.data : [];
-      const buyurtmaTushdiOrders = ordersData.filter(o => o.status === 'buyurtma_tushdi');
+      console.log('API Response:', ordersData); // Debug log
 
       // Calculate new orders since last fetch
+      const buyurtmaTushdiOrders = ordersData.filter(o => o.status === 'buyurtma_tushdi');
+      console.log('New buyurtma_tushdi orders:', buyurtmaTushdiOrders); // Debug log
+
       if (orders.length > 0) {
-        const newOrders = buyurtmaTushdiOrders.filter(newOrder => 
-          !orders.some(oldOrder => oldOrder.id === newOrder.id)
+        const newOrders = buyurtmaTushdiOrders.filter(
+          newOrder => !orders.some(oldOrder => oldOrder.id === newOrder.id)
         );
+        console.log('Detected new orders:', newOrders); // Debug log
         setNewOrderCount(newOrders.length);
+      } else {
+        setNewOrderCount(buyurtmaTushdiOrders.length);
       }
 
       // Play sound and show notification if there are new buyurtma_tushdi orders
@@ -286,19 +361,24 @@ const CourierOrders = () => {
     } catch (err) {
       let errorMessage = 'Ma\'lumotlarni olishda xato';
       if (err.response) {
+        console.error('API Error:', err.response.status, err.response.data); // Debug log
         if (err.response.status === 401) {
           errorMessage = 'Sessiya tugagan. Qayta kiring';
           localStorage.removeItem('authToken');
           localStorage.removeItem('userProfile');
           localStorage.removeItem('roles');
           navigate('/login', { replace: true });
+        } else if (err.response.status === 404) {
+          errorMessage = 'Buyurtmalar endpointi topilmadi. Server bilan bog\'laning.';
         } else {
           errorMessage = err.response.data?.detail || err.response.data?.message || errorMessage;
         }
       } else if (err.request) {
         errorMessage = 'Internet aloqasi yo\'q';
+        console.error('Network Error:', err.request); // Debug log
       } else {
         errorMessage = err.message || 'Noma\'lum xato';
+        console.error('Unknown Error:', err); // Debug log
       }
       setError(errorMessage);
     } finally {
@@ -372,21 +452,23 @@ const CourierOrders = () => {
   // Status label with colors
   const getStatusLabel = (status, isChip = false) => {
     const statusMap = {
-      buyurtma_tushdi: { label: 'Yangi', color: 'warning' },
-      oshxona_vaqt_belgiladi: { label: 'Vaqt belgilandi', color: 'info' },
-      kuryer_oldi: { label: 'Kuryer oldi', color: 'primary' },
-      qaytarildi: { label: 'Qaytarildi', color: 'error' },
+      buyurtma_tushdi: { label: 'Yangi', color: 'warning', icon: <CheckCircle /> },
+      oshxona_vaqt_belgiladi: { label: 'Vaqt belgilandi', color: 'info', icon: <Timer /> },
+      kuryer_oldi: { label: 'Kuryer oldi', color: 'primary', icon: <DirectionsBike /> },
+      qaytarildi: { label: 'Qaytarildi', color: 'error', icon: <AssignmentReturn /> },
     };
     
-    const statusInfo = statusMap[status] || { label: status, color: 'default' };
+    const statusInfo = statusMap[status] || { label: status, color: 'default', icon: <CheckCircle /> };
     
     if (isChip) {
       return (
         <Chip 
           label={statusInfo.label} 
           color={statusInfo.color} 
+          icon={statusInfo.icon}
           size="small" 
-          sx={{ fontWeight: 600 }}
+          variant="filled"
+          sx={{ fontWeight: 'bold', bgcolor: `${statusInfo.color}.light`, color: `${statusInfo.color}.dark` }}
         />
       );
     }
@@ -414,8 +496,14 @@ const CourierOrders = () => {
   useEffect(() => {
     if (token) {
       fetchOrders();
-      const interval = setInterval(fetchOrders, 10000);
-      return () => clearInterval(interval);
+      const interval = setInterval(() => {
+        console.log('Polling for new orders...'); // Debug log
+        fetchOrders();
+      }, 10000);
+      return () => {
+        console.log('Clearing interval'); // Debug log
+        clearInterval(interval);
+      };
     } else {
       setError('Tizimga kirish talab qilinadi');
       navigate('/login', { replace: true });
@@ -432,101 +520,117 @@ const CourierOrders = () => {
 
   if (loading && orders.length === 0) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh', 
-        bgcolor: 'background.default' 
-      }}>
-        <CircularProgress size={60} thickness={4} sx={{ color: 'primary.main' }} />
-      </Box>
+      <ThemeProvider theme={theme}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '80vh',
+            bgcolor: 'background.default',
+          }}
+        >
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress size={isMobile ? 40 : 60} />
+            <Typography variant="body1" color="text.secondary">
+              Ma'lumotlar yuklanmoqda...
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Refresh />}
+              onClick={() => {
+                setLoading(true);
+                fetchOrders();
+              }}
+            >
+              Qayta yuklash
+            </Button>
+          </Stack>
+        </Box>
+      </ThemeProvider>
     );
   }
 
   // Determine grid columns based on screen size
   const getGridColumns = () => {
-    if (isMobile) return 1;
-    if (isTablet) return 2;
-    return 4;
+    if (isMobile) return 12;
+    if (isTablet) return 6;
+    return 3;
   };
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ 
-        p: isMobile ? 2 : 3, 
-        bgcolor: 'background.default', 
-        minHeight: '100vh',
-        maxWidth: 1400,
-        mx: 'auto'
-      }}>
+      <Box
+        sx={{
+          p: isMobile ? 1 : 3,
+          bgcolor: 'background.default',
+          minHeight: '100vh',
+          maxWidth: 1200,
+          mx: 'auto',
+        }}
+      >
         {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1.5}>
-            <IconButton 
-              onClick={() => navigate(-1)} 
-              sx={{ 
-                bgcolor: 'primary.light', 
+            <IconButton
+              onClick={() => navigate(-1)}
+              sx={{
+                bgcolor: 'primary.light',
                 color: 'primary.main',
-                '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                '&:hover': { bgcolor: 'primary.main', color: 'white' },
               }}
             >
               <ArrowBack />
             </IconButton>
-            <Typography variant="h5" color="primary" fontWeight="bold">
-              Buyurtmalar Boshqaruvi
+            <Typography variant="h6" fontWeight="bold">
+              Oshxona Buyurtmalari
             </Typography>
           </Stack>
-          
           <Stack direction="row" alignItems="center" spacing={1}>
             <Tooltip title="Ovozni yoqish/o'chirish">
               <FormControlLabel
                 control={
-                  <Switch 
-                    checked={soundEnabled} 
-                    onChange={() => setSoundEnabled(prev => !prev)} 
+                  <Switch
+                    checked={soundEnabled}
+                    onChange={() => setSoundEnabled(prev => !prev)}
                     color="primary"
                     size="small"
                   />
                 }
                 label={soundEnabled ? 'Ovoz yoqilgan' : 'Ovoz o\'chirilgan'}
                 labelPlacement="start"
-                sx={{ 
-                  '& .MuiTypography-root': { 
-                    fontSize: '0.8rem',
-                    color: 'text.secondary'
-                  } 
-                }}
+                sx={{ '& .MuiTypography-root': { fontSize: '0.8rem', color: 'text.secondary' } }}
               />
             </Tooltip>
-            
             <Tooltip title="Yangilash">
-              <IconButton 
-                onClick={fetchOrders} 
-                sx={{ 
-                  bgcolor: 'primary.light', 
+              <IconButton
+                onClick={() => {
+                  setLoading(true);
+                  fetchOrders();
+                }}
+                sx={{
+                  bgcolor: 'primary.light',
                   color: 'primary.main',
-                  '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                  '&:hover': { bgcolor: 'primary.main', color: 'white' },
                 }}
               >
                 <Refresh />
               </IconButton>
             </Tooltip>
-            
             <IconButton
               aria-label="more"
               aria-controls="long-menu"
               aria-haspopup="true"
               onClick={handleMenuOpen}
-              sx={{ 
+              sx={{
                 bgcolor: 'background.paper',
                 boxShadow: 1,
-                '&:hover': { bgcolor: 'action.hover' }
+                '&:hover': { bgcolor: 'action.hover' },
               }}
             >
               <MoreVert />
             </IconButton>
-            
             <Menu
               id="long-menu"
               anchorEl={anchorEl}
@@ -537,7 +641,7 @@ const CourierOrders = () => {
                 style: {
                   width: '200px',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                  borderRadius: '12px'
+                  borderRadius: '12px',
                 },
               }}
             >
@@ -564,124 +668,90 @@ const CourierOrders = () => {
           variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons="auto"
           allowScrollButtonsMobile
-          sx={{ 
-            mb: 3, 
-            bgcolor: 'background.paper', 
+          sx={{
+            mb: 2,
+            bgcolor: 'white',
             borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-            '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: '3px 3px 0 0'
-            }
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
-          <Tab 
+          <Tab
             label={
-              <Badge 
-                badgeContent={filteredOrders[0].length} 
-                color="warning" 
-                max={99}
-                sx={{ '& .MuiBadge-badge': { right: -10 } }}
-              >
+              <Badge badgeContent={filteredOrders[0].length} color="warning">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AccessTime fontSize="small" />
-                  <span>Yangi</span>
+                  <Typography>Yangi ({filteredOrders[0].length})</Typography>
                 </Stack>
               </Badge>
             }
-            sx={{ minWidth: 'unset', px: 2 }}
           />
-          <Tab 
+          <Tab
             label={
-              <Badge 
-                badgeContent={filteredOrders[1].length} 
-                color="info" 
-                max={99}
-                sx={{ '& .MuiBadge-badge': { right: -10 } }}
-              >
+              <Badge badgeContent={filteredOrders[1].length} color="info">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <Timer fontSize="small" />
-                  <span>Jarayonda</span>
+                  <Typography>Jarayonda ({filteredOrders[1].length})</Typography>
                 </Stack>
               </Badge>
             }
-            sx={{ minWidth: 'unset', px: 2 }}
           />
-          <Tab 
+          <Tab
             label={
-              <Badge 
-                badgeContent={filteredOrders[2].length} 
-                color="primary" 
-                max={99}
-                sx={{ '& .MuiBadge-badge': { right: -10 } }}
-              >
+              <Badge badgeContent={filteredOrders[2].length} color="primary">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <DirectionsBike fontSize="small" />
-                  <span>Yetkazilmoqda</span>
+                  <Typography>Yetkazilmoqda ({filteredOrders[2].length})</Typography>
                 </Stack>
               </Badge>
             }
-            sx={{ minWidth: 'unset', px: 2 }}
           />
-          <Tab 
+          <Tab
             label={
-              <Badge 
-                badgeContent={filteredOrders[3].length} 
-                color="error" 
-                max={99}
-                sx={{ '& .MuiBadge-badge': { right: -10 } }}
-              >
+              <Badge badgeContent={filteredOrders[3].length} color="error">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AssignmentReturn fontSize="small" />
-                  <span>Yakunlangan</span>
+                  <Typography>Yakunlangan ({filteredOrders[3].length})</Typography>
                 </Stack>
               </Badge>
             }
-            sx={{ minWidth: 'unset', px: 2 }}
           />
         </Tabs>
 
         {/* Orders Grid */}
-        <Box id="back-to-top-anchor">
+        <Box id="back-to-top-anchor" sx={{ mb: isMobile ? 16 : 8 }}>
           {filteredOrders[activeTab].length === 0 ? (
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              minHeight: '300px',
-              textAlign: 'center',
-              p: 3,
-              bgcolor: 'background.paper',
-              borderRadius: '16px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-            }}>
-              <img 
-                src="/empty-state.svg" 
-                alt="No orders" 
-                style={{ width: '150px', opacity: 0.7, marginBottom: '20px' }}
-              />
+            <Paper
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                borderRadius: '12px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Buyurtmalar topilmadi
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '300px' }}>
-                Ushbu bo'limda hozircha buyurtmalar mavjud emas. Yangi buyurtmalar avtomatik ravishda shu yerda ko'rinadi.
+              <Typography variant="body1" color="text.secondary">
+                Ushbu bo'limda hozircha buyurtmalar mavjud emas.
               </Typography>
-              <Button 
-                variant="outlined" 
-                startIcon={<Refresh />} 
-                onClick={fetchOrders}
+              <Button
+                variant="contained"
+                startIcon={<Refresh />}
+                onClick={() => {
+                  setLoading(true);
+                  fetchOrders();
+                }}
                 sx={{ mt: 2 }}
               >
                 Yangilash
               </Button>
-            </Box>
+            </Paper>
           ) : (
-            <Grid container spacing={3}>
+            <Grid container spacing={isMobile ? 2 : 3}>
               {filteredOrders[activeTab].map(order => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={order.id}>
+                <Grid item xs={getGridColumns()} key={order.id}>
                   <Card>
-                    <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
+                    <CardContent sx={{ p: isMobile ? 2 : 3 }}>
                       {/* Order Header */}
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                         <Box>
@@ -698,7 +768,7 @@ const CourierOrders = () => {
                         </Typography>
                       </Stack>
 
-                      <Divider sx={{ my: 1.5, opacity: 0.5 }} />
+                      <Divider sx={{ my: 1.5 }} />
 
                       {/* Customer Info */}
                       <Box sx={{ mb: 1.5 }}>
@@ -707,26 +777,26 @@ const CourierOrders = () => {
                         </Typography>
                         <Stack spacing={1}>
                           <Typography variant="body2" noWrap>
-                            <Person fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
-                            {order.user?.name || 'Noma\'lum'}
+                            <Person fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                            {order.user || 'Noma\'lum'}
                           </Typography>
                           <Typography
                             variant="body2"
                             component="a"
                             href={`tel:${order.contact_number}`}
-                            sx={{ 
-                              textDecoration: 'none', 
+                            sx={{
+                              textDecoration: 'none',
                               color: 'primary.main',
                               '&:hover': { textDecoration: 'underline' },
-                              noWrap: true
+                              noWrap: true,
                             }}
                           >
-                            <Phone fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            <Phone fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                             {order.contact_number || 'Noma\'lum'}
                           </Typography>
                           <Tooltip title={order.address || 'Manzil kiritilmagan'} arrow>
                             <Typography variant="body2" noWrap>
-                              <LocationOn fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                              <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                               {order.address || 'Manzil kiritilmagan'}
                             </Typography>
                           </Tooltip>
@@ -740,15 +810,15 @@ const CourierOrders = () => {
                         </Typography>
                         <Stack spacing={1}>
                           <Typography variant="body2" noWrap>
-                            <Restaurant fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            <Restaurant fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                             {order.kitchen?.name || 'Noma\'lum'}
                           </Typography>
                           <Typography variant="body2">
-                            <Payment fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            <Payment fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                             {order.payment === 'naqd' ? 'Naqd' : 'Karta orqali'}
                           </Typography>
                           <Typography variant="body2">
-                            <Timer fontSize="small" color="action" sx={{ opacity: 0.7, mr: 0.5 }} />
+                            <Timer fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                             {formatTime(order.kitchen_time)}
                           </Typography>
                         </Stack>
@@ -781,14 +851,20 @@ const CourierOrders = () => {
                             size="small"
                             startIcon={<Timer />}
                             onClick={() => openEditDialog(order)}
-                            fullWidth
-                            sx={{ py: 0.8 }}
+                            sx={{ py: 0.8, flex: 1 }}
                           >
                             Vaqt
                           </Button>
                         )}
-                      
-                        
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<Print />}
+                          onClick={() => printReceipt(order)}
+                          sx={{ py: 0.8, flex: 1 }}
+                        >
+                          Chop et
+                        </Button>
                       </Stack>
                     </CardContent>
                   </Card>
@@ -804,51 +880,45 @@ const CourierOrders = () => {
           onClose={() => setEditDialogOpen(false)}
           maxWidth="xs"
           fullWidth
+          sx={{ '& .MuiDialog-paper': { borderRadius: '16px', p: 2 } }}
         >
-          <DialogTitle sx={{ 
-            fontWeight: 'bold', 
-            color: 'primary.main',
-            borderBottom: '1px solid rgba(0,0,0,0.1)',
-            pb: 2
-          }}>
+          <DialogTitle sx={{ fontWeight: 600 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Timer color="primary" />
-              <span>Oshxona vaqtini belgilash</span>
+              <Typography>Oshxona vaqtini belgilash</Typography>
             </Stack>
           </DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
+          <DialogContent>
             <Typography variant="body1" sx={{ mb: 2 }}>
               Buyurtma raqami: <strong>#{currentOrder?.id}</strong>
             </Typography>
-            
             <TextField
               label="Tayyor bo'lish vaqti"
               type="number"
               fullWidth
               value={kitchenMinutes}
               onChange={e => setKitchenMinutes(e.target.value)}
-              InputProps={{ 
+              InputProps={{
                 inputProps: { min: 5, max: 180 },
                 endAdornment: <InputAdornment position="end">minut</InputAdornment>,
-                sx: { borderRadius: '10px' }
+                sx: { borderRadius: '10px' },
               }}
               helperText="Iltimos, 5-180 daqiqa oralig'ida kiriting"
               size="medium"
               sx={{ mt: 1 }}
               autoFocus
             />
-            
             {dialogError && (
               <Alert severity="error" sx={{ mt: 2, borderRadius: '10px' }}>
                 {dialogError}
               </Alert>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 3, pt: 0, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-            <Button 
-              onClick={() => setEditDialogOpen(false)} 
-              variant="outlined"
-              sx={{ borderRadius: '10px', px: 3 }}
+          <DialogActions>
+            <Button
+              onClick={() => setEditDialogOpen(false)}
+              color="primary"
+              sx={{ fontWeight: 600 }}
             >
               Bekor qilish
             </Button>
@@ -856,7 +926,7 @@ const CourierOrders = () => {
               variant="contained"
               onClick={handleUpdateKitchenTime}
               disabled={!kitchenMinutes}
-              sx={{ borderRadius: '10px', px: 3 }}
+              sx={{ fontWeight: 600, borderRadius: '10px' }}
             >
               Tasdiqlash
             </Button>
@@ -868,26 +938,27 @@ const CourierOrders = () => {
           open={newOrderCount > 0}
           autoHideDuration={6000}
           onClose={() => setNewOrderCount(0)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          sx={{ '& .MuiPaper-root': { borderRadius: '12px' } }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert 
-            severity="info" 
-            icon={<Notifications fontSize="large" />}
+          <Alert
+            severity="info"
+            icon={<Notifications />}
             onClose={() => setNewOrderCount(0)}
-            sx={{ 
-              bgcolor: 'background.paper',
-              color: 'text.primary',
-              alignItems: 'center',
-              '& .MuiAlert-icon': { alignItems: 'center' }
-            }}
+            sx={{ width: '100%', borderRadius: '10px' }}
           >
-            <Typography variant="subtitle1" fontWeight="bold">
-              {newOrderCount} ta yangi buyurtma!
-            </Typography>
-            <Typography variant="body2">
-              Yangi buyurtmalarni ko'rish uchun yangilash tugmasini bosing
-            </Typography>
+            <Typography fontWeight="bold">{newOrderCount} ta yangi buyurtma!</Typography>
+            <Typography>Yangilash uchun tugmani bosing</Typography>
+            <Button
+              size="small"
+              onClick={() => {
+                setLoading(true);
+                fetchOrders();
+                setNewOrderCount(0);
+              }}
+              sx={{ mt: 1 }}
+            >
+              Yangilash
+            </Button>
           </Alert>
         </Snackbar>
 
@@ -898,14 +969,10 @@ const CourierOrders = () => {
           onClose={() => setError('')}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert 
-            severity="error" 
+          <Alert
+            severity="error"
             onClose={() => setError('')}
-            sx={{ 
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              alignItems: 'center'
-            }}
+            sx={{ width: '100%', borderRadius: '10px' }}
           >
             {error}
           </Alert>
@@ -918,14 +985,10 @@ const CourierOrders = () => {
           onClose={() => setSuccess('')}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert 
-            severity="success" 
+          <Alert
+            severity="success"
             onClose={() => setSuccess('')}
-            sx={{ 
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              alignItems: 'center'
-            }}
+            sx={{ width: '100%', borderRadius: '10px' }}
           >
             {success}
           </Alert>

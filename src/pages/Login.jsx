@@ -11,7 +11,7 @@ const Login = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const API_URL = 'https://hosilbek.pythonanywhere.com/api/user/kitchen-login/';
+  const API_URL = 'https://hosilbek02.pythonanywhere.com/api/user/kitchen-login/';
 
   const handleChange = (e) => {
     const { name, value } = e.target;

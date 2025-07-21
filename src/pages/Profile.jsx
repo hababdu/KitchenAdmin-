@@ -48,8 +48,8 @@ const KitchenProfile = () => {
   const [isToggling, setIsToggling] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const token = localStorage.getItem('authToken');
-  const PROFILE_URL = 'https://hosilbek.pythonanywhere.com/api/user/me/';
-  const KITCHENS_URL = 'https://hosilbek.pythonanywhere.com/api/user/kitchens/'; // To‘g‘ri endpointga qaytdik
+  const PROFILE_URL = 'https://hosilbek02.pythonanywhere.com/api/user/me/';
+  const KITCHENS_URL = 'https://hosilbek02.pythonanywhere.com/api/user/kitchens/'; // To‘g‘ri endpointga qaytdik
 
   const axiosInstance = axios.create({
     headers: { Authorization: token ? `Token ${token}` : '', 'Content-Type': 'application/json' },

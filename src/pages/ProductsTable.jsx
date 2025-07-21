@@ -43,7 +43,7 @@ const ProductsTable = ({ kitchenId }) => {
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [togglingProducts, setTogglingProducts] = useState({});
-  const API_URL = 'https://hosilbek.pythonanywhere.com/';
+  const API_URL = 'https://hosilbek02.pythonanywhere.com/';
   const token = localStorage.getItem('authToken');
 
   const axiosInstance = axios.create({
