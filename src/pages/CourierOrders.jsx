@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback ,useMemo} from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Box, Typography, CircularProgress, Alert, Stack, Button, Card, CardContent,
   Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   InputAdornment, IconButton, ThemeProvider, createTheme, useMediaQuery,
-  Tabs, Tab, FormControlLabel, Switch, Table, TableContainer, TableHead,
-  TableBody, TableRow, TableCell, Paper, Avatar, Divider, Badge, Chip,
-  Tooltip, Menu, MenuItem, ListItemIcon, Fab, useScrollTrigger, Zoom,
+  Tabs, Tab, FormControlLabel, Switch,
+  Tooltip, Menu, MenuItem, ListItemIcon, Fab, useScrollTrigger, Zoom, Badge,
+  Paper, Divider, Chip, CardActions,
+  useTheme,
   Grid
 } from '@mui/material';
 import {
@@ -157,7 +158,7 @@ function ScrollTop(props) {
   );
 }
 
-const CourierOrders = () => {
+const KitchenOrders = () => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
@@ -179,7 +180,7 @@ const CourierOrders = () => {
   const token = localStorage.getItem('authToken');
 
   // Initialize audio
-  const initializeAudio = () => {
+  const initializeAudio = useCallback(() => {
     try {
       const audio = new Audio(newOrderSound);
       audio.volume = 0.5;
@@ -189,7 +190,7 @@ const CourierOrders = () => {
       console.error('Audio initialization error:', err);
       setError('Ovoz faylini yuklashda xato.');
     }
-  };
+  }, []);
 
   // Detect user interaction
   useEffect(() => {
@@ -207,10 +208,10 @@ const CourierOrders = () => {
     return () => {
       events.forEach(event => window.removeEventListener(event, handleInteraction));
     };
-  }, [userInteracted]);
+  }, [initializeAudio, userInteracted]);
 
   // Print receipt function
-  const printReceipt = (order) => {
+  const printReceipt = useCallback((order) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       setError('Chop etish oynasini ochib bo\'lmadi. Iltimos, brauzer sozlamalarini tekshiring.');
@@ -308,10 +309,10 @@ const CourierOrders = () => {
 
     printWindow.document.write(receiptContent);
     printWindow.document.close();
-  };
+  }, []);
 
   // Check token and fetch orders
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!token) {
       setError('Tizimga kirish talab qilinadi');
       navigate('/login', { replace: true });
@@ -321,23 +322,19 @@ const CourierOrders = () => {
 
     try {
       setLoading(true);
-      console.log('Fetching orders from:', ORDERS_API); // Debug log
       const response = await axios.get(ORDERS_API, {
         headers: { Authorization: `Token ${token}` },
       });
 
       const ordersData = Array.isArray(response.data) ? response.data : [];
-      console.log('API Response:', ordersData); // Debug log
 
       // Calculate new orders since last fetch
       const buyurtmaTushdiOrders = ordersData.filter(o => o.status === 'buyurtma_tushdi');
-      console.log('New buyurtma_tushdi orders:', buyurtmaTushdiOrders); // Debug log
 
       if (orders.length > 0) {
         const newOrders = buyurtmaTushdiOrders.filter(
           newOrder => !orders.some(oldOrder => oldOrder.id === newOrder.id)
         );
-        console.log('Detected new orders:', newOrders); // Debug log
         setNewOrderCount(newOrders.length);
       } else {
         setNewOrderCount(buyurtmaTushdiOrders.length);
@@ -361,7 +358,6 @@ const CourierOrders = () => {
     } catch (err) {
       let errorMessage = 'Ma\'lumotlarni olishda xato';
       if (err.response) {
-        console.error('API Error:', err.response.status, err.response.data); // Debug log
         if (err.response.status === 401) {
           errorMessage = 'Sessiya tugagan. Qayta kiring';
           localStorage.removeItem('authToken');
@@ -375,27 +371,25 @@ const CourierOrders = () => {
         }
       } else if (err.request) {
         errorMessage = 'Internet aloqasi yo\'q';
-        console.error('Network Error:', err.request); // Debug log
       } else {
         errorMessage = err.message || 'Noma\'lum xato';
-        console.error('Unknown Error:', err); // Debug log
       }
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, navigate, orders.length, soundEnabled, userInteracted]);
 
   // Open edit dialog
-  const openEditDialog = order => {
+  const openEditDialog = useCallback((order) => {
     setCurrentOrder(order);
     setKitchenMinutes('');
     setDialogError('');
     setEditDialogOpen(true);
-  };
+  }, []);
 
   // Update kitchen time
-  const handleUpdateKitchenTime = async () => {
+  const handleUpdateKitchenTime = useCallback(async () => {
     if (!currentOrder) {
       setDialogError('Buyurtma tanlanmadi');
       return;
@@ -407,12 +401,11 @@ const CourierOrders = () => {
       return;
     }
 
-    const formattedTime = `00:${String(minutes).padStart(2, '0')}`;
     try {
       await axios.patch(
         `${ORDERS_API}${currentOrder.id}/`,
         { 
-          kitchen_time: formattedTime, 
+          kitchen_time: minutes,  // Send as integer minutes
           kitchen_time_set_at: new Date().toISOString(),
           status: 'oshxona_vaqt_belgiladi'
         },
@@ -424,38 +417,43 @@ const CourierOrders = () => {
     } catch (err) {
       setDialogError(err.response?.data?.detail || 'Vaqtni yangilashda xato');
     }
-  };
+  }, [currentOrder, kitchenMinutes, token, fetchOrders]);
 
   // Calculate total price
-  const calculateTotalPrice = items => {
+  const calculateTotalPrice = useCallback((items) => {
     return items.reduce((total, item) => total + item.quantity * parseFloat(item.price), 0).toLocaleString('uz-UZ');
-  };
+  }, []);
 
   // Format kitchen time
-  const formatTime = kitchenTime => {
+  const formatTime = useCallback((kitchenTime) => {
     if (!kitchenTime) return 'Belgilanmagan';
     if (typeof kitchenTime === 'string' && kitchenTime.includes(':')) {
       const [hours, minutes] = kitchenTime.split(':').map(Number);
       return `${hours > 0 ? `${hours} soat ` : ''}${minutes} minut`;
+    } else if (typeof kitchenTime === 'number') {
+      const hours = Math.floor(kitchenTime / 60);
+      const minutes = kitchenTime % 60;
+      return `${hours > 0 ? `${hours} soat ` : ''}${minutes} minut`;
     }
     return 'Belgilanmagan';
-  };
+  }, []);
 
   // Format timestamp
-  const formatTimestamp = timestamp => {
+  const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return 'Noma\'lum';
     const date = new Date(timestamp);
     return date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) + 
            ', ' + date.toLocaleDateString('uz-UZ');
-  };
+  }, []);
 
   // Status label with colors
-  const getStatusLabel = (status, isChip = false) => {
+  const getStatusLabel = useCallback((status, isChip = false) => {
     const statusMap = {
       buyurtma_tushdi: { label: 'Yangi', color: 'warning', icon: <CheckCircle /> },
       oshxona_vaqt_belgiladi: { label: 'Vaqt belgilandi', color: 'info', icon: <Timer /> },
       kuryer_oldi: { label: 'Kuryer oldi', color: 'primary', icon: <DirectionsBike /> },
       qaytarildi: { label: 'Qaytarildi', color: 'error', icon: <AssignmentReturn /> },
+      buyurtma_topshirildi: { label: 'Yakunlangan', color: 'success', icon: <DoneAll /> },
     };
     
     const statusInfo = statusMap[status] || { label: status, color: 'default', icon: <CheckCircle /> };
@@ -473,15 +471,15 @@ const CourierOrders = () => {
       );
     }
     return statusInfo.label;
-  };
+  }, []);
 
   // Filter orders by tab
-  const filteredOrders = [
+  const filteredOrders = useMemo(() => [
     orders.filter(o => o.status === 'buyurtma_tushdi'),
     orders.filter(o => o.status === 'oshxona_vaqt_belgiladi'),
     orders.filter(o => o.status === 'kuryer_oldi'),
-    orders.filter(o => o.status === 'qaytarildi')
-  ];
+    orders.filter(o => o.status === 'buyurtma_topshirildi')
+  ], [orders]);
 
   // Menu handlers
   const handleMenuOpen = (event) => {
@@ -496,19 +494,13 @@ const CourierOrders = () => {
   useEffect(() => {
     if (token) {
       fetchOrders();
-      const interval = setInterval(() => {
-        console.log('Polling for new orders...'); // Debug log
-        fetchOrders();
-      }, 10000);
-      return () => {
-        console.log('Clearing interval'); // Debug log
-        clearInterval(interval);
-      };
+      const interval = setInterval(fetchOrders, 10000); // Adjusted to 10 seconds
+      return () => clearInterval(interval);
     } else {
       setError('Tizimga kirish talab qilinadi');
       navigate('/login', { replace: true });
     }
-  }, [token, navigate]);
+  }, [token, navigate, fetchOrders]);
 
   // Reset new order count after showing notification
   useEffect(() => {
@@ -1005,4 +997,4 @@ const CourierOrders = () => {
   );
 };
 
-export default CourierOrders;
+export default KitchenOrders;
