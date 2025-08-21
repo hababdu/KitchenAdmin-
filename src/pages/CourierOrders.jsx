@@ -454,6 +454,7 @@ const KitchenOrders = () => {
       kuryer_oldi: { label: 'Kuryer oldi', color: 'primary', icon: <DirectionsBike /> },
       qaytarildi: { label: 'Qaytarildi', color: 'error', icon: <AssignmentReturn /> },
       buyurtma_topshirildi: { label: 'Yakunlangan', color: 'success', icon: <DoneAll /> },
+      qaytarildi: { label: 'Qaytarilgan', color: 'success', icon: <DoneAll /> },
     };
     
     const statusInfo = statusMap[status] || { label: status, color: 'default', icon: <CheckCircle /> };
@@ -478,7 +479,8 @@ const KitchenOrders = () => {
     orders.filter(o => o.status === 'buyurtma_tushdi'),
     orders.filter(o => o.status === 'oshxona_vaqt_belgiladi'),
     orders.filter(o => o.status === 'kuryer_oldi'),
-    orders.filter(o => o.status === 'buyurtma_topshirildi')
+    orders.filter(o => o.status === 'buyurtma_topshirildi'),
+    orders.filter(o => o.status === 'qaytarildi'),
   ], [orders]);
 
   // Menu handlers
@@ -703,6 +705,16 @@ const KitchenOrders = () => {
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AssignmentReturn fontSize="small" />
                   <Typography>Yakunlangan ({filteredOrders[3].length})</Typography>
+                </Stack>
+              </Badge>
+            }
+          />
+        <Tab
+            label={
+              <Badge badgeContent={filteredOrders[3].length} color="error">
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <AssignmentReturn fontSize="small" />
+                  <Typography>Qaytarildi ({filteredOrders[4].length})</Typography>
                 </Stack>
               </Badge>
             }
