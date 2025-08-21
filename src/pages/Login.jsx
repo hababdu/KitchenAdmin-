@@ -87,7 +87,7 @@ const Login = ({ onLogin }) => {
       }
 
       // Navigate based on role
-      const targetRoute = roles.includes('kitchen_admin') ? '/kitchen-profile' : '/profile';
+      const targetRoute = roles.includes('kitchen_admin') ? '/profile' : '/profile';
       navigate(targetRoute, { replace: true });
     } catch (err) {
       console.error('Login xatosi:', err.response?.data || err.message);
