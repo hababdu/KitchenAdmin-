@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback ,useMemo} from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -7,14 +7,12 @@ import {
   InputAdornment, IconButton, ThemeProvider, createTheme, useMediaQuery,
   Tabs, Tab, FormControlLabel, Switch,
   Tooltip, Menu, MenuItem, ListItemIcon, Fab, useScrollTrigger, Zoom, Badge,
-  Paper, Divider, Chip, CardActions,
-  useTheme,
-  Grid
+  Paper, Divider, Chip, Grid
 } from '@mui/material';
 import {
   Refresh, Edit, Timer, ArrowBack, AccessTime, AssignmentReturn, Person,
-  Phone, LocationOn, Payment, Restaurant, Assignment, Notifications,
-  MoreVert, CheckCircle, Cancel, DirectionsBike, DoneAll, FilterList,
+  Phone, LocationOn, Payment, Restaurant, Notifications,
+  MoreVert, CheckCircle, DirectionsBike, DoneAll, FilterList,
   KeyboardArrowUp, Print
 } from '@mui/icons-material';
 
@@ -25,7 +23,7 @@ import newOrderSound from '../assets/notification.mp3';
 const BASE_URL = 'https://hosilbek02.pythonanywhere.com';
 const ORDERS_API = `${BASE_URL}/api/user/orders/`;
 
-// Custom theme matching CourierDashboard
+// Custom theme with responsive adjustments
 const theme = createTheme({
   palette: {
     primary: { main: '#0288d1' },
@@ -46,12 +44,50 @@ const theme = createTheme({
       'Roboto',
       'sans-serif',
     ].join(','),
-    h5: { fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.5px' },
-    subtitle1: { fontWeight: 600, fontSize: '1rem' },
-    body1: { fontSize: '0.95rem', lineHeight: 1.6 },
-    body2: { fontSize: '0.85rem', lineHeight: 1.5 },
-    caption: { fontSize: '0.8rem', color: '#757575' },
-    button: { textTransform: 'none', fontWeight: 600 },
+    h5: {
+      fontWeight: 700,
+      fontSize: '1.5rem',
+      letterSpacing: '-0.5px',
+      '@media (max-width:600px)': {
+        fontSize: '1.2rem',
+      },
+    },
+    subtitle1: {
+      fontWeight: 600,
+      fontSize: '1rem',
+      '@media (max-width:600px)': {
+        fontSize: '0.9rem',
+      },
+    },
+    body1: {
+      fontSize: '0.95rem',
+      lineHeight: 1.6,
+      '@media (max-width:600px)': {
+        fontSize: '0.85rem',
+      },
+    },
+    body2: {
+      fontSize: '0.85rem',
+      lineHeight: 1.5,
+      '@media (max-width:600px)': {
+        fontSize: '0.75rem',
+      },
+    },
+    caption: {
+      fontSize: '0.8rem',
+      color: '#757575',
+      '@media (max-width:600px)': {
+        fontSize: '0.7rem',
+      },
+    },
+    button: {
+      textTransform: 'none',
+      fontWeight: 600,
+      fontSize: '0.95rem',
+      '@media (max-width:600px)': {
+        fontSize: '0.85rem',
+      },
+    },
   },
   shape: { borderRadius: 12 },
   components: {
@@ -68,6 +104,9 @@ const theme = createTheme({
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
+          '@media (max-width:600px)': {
+            borderRadius: '12px',
+          },
         },
       },
     },
@@ -82,12 +121,24 @@ const theme = createTheme({
           boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
           '&:hover': { boxShadow: '0 5px 10px rgba(0,0,0,0.15)' },
           minWidth: '120px',
+          '@media (max-width:600px)': {
+            padding: '8px 16px',
+            minWidth: '100px',
+            fontSize: '0.85rem',
+          },
         },
       },
     },
     MuiDialog: {
       styleOverrides: {
-        paper: { borderRadius: '16px', padding: '16px' },
+        paper: {
+          borderRadius: '16px',
+          padding: '16px',
+          '@media (max-width:600px)': {
+            margin: '16px',
+            padding: '12px',
+          },
+        },
       },
     },
     MuiTabs: {
@@ -184,6 +235,7 @@ const KitchenOrders = () => {
     try {
       const audio = new Audio(newOrderSound);
       audio.volume = 0.5;
+      audio.preload = 'auto';
       audio.load();
       audioRef.current = audio;
     } catch (err) {
@@ -191,24 +243,6 @@ const KitchenOrders = () => {
       setError('Ovoz faylini yuklashda xato.');
     }
   }, []);
-
-  // Detect user interaction
-  useEffect(() => {
-    initializeAudio();
-
-    const handleInteraction = () => {
-      if (!userInteracted) {
-        setUserInteracted(true);
-      }
-    };
-
-    const events = ['click', 'touchstart', 'mousedown', 'keydown', 'mousemove'];
-    events.forEach(event => window.addEventListener(event, handleInteraction));
-
-    return () => {
-      events.forEach(event => window.removeEventListener(event, handleInteraction));
-    };
-  }, [initializeAudio, userInteracted]);
 
   // Print receipt function
   const printReceipt = useCallback((order) => {
@@ -404,8 +438,8 @@ const KitchenOrders = () => {
     try {
       await axios.patch(
         `${ORDERS_API}${currentOrder.id}/`,
-        { 
-          kitchen_time: minutes,  // Send as integer minutes
+        {
+          kitchen_time: minutes,
           kitchen_time_set_at: new Date().toISOString(),
           status: 'oshxona_vaqt_belgiladi'
         },
@@ -442,7 +476,7 @@ const KitchenOrders = () => {
   const formatTimestamp = useCallback((timestamp) => {
     if (!timestamp) return 'Noma\'lum';
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) + 
+    return date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) +
            ', ' + date.toLocaleDateString('uz-UZ');
   }, []);
 
@@ -454,18 +488,17 @@ const KitchenOrders = () => {
       kuryer_oldi: { label: 'Kuryer oldi', color: 'primary', icon: <DirectionsBike /> },
       qaytarildi: { label: 'Qaytarildi', color: 'error', icon: <AssignmentReturn /> },
       buyurtma_topshirildi: { label: 'Yakunlangan', color: 'success', icon: <DoneAll /> },
-      qaytarildi: { label: 'Qaytarilgan', color: 'success', icon: <DoneAll /> },
     };
-    
+
     const statusInfo = statusMap[status] || { label: status, color: 'default', icon: <CheckCircle /> };
-    
+
     if (isChip) {
       return (
-        <Chip 
-          label={statusInfo.label} 
-          color={statusInfo.color} 
+        <Chip
+          label={statusInfo.label}
+          color={statusInfo.color}
           icon={statusInfo.icon}
-          size="small" 
+          size="small"
           variant="filled"
           sx={{ fontWeight: 'bold', bgcolor: `${statusInfo.color}.light`, color: `${statusInfo.color}.dark` }}
         />
@@ -492,11 +525,108 @@ const KitchenOrders = () => {
     setAnchorEl(null);
   };
 
+  // Subscribe to push notifications
+  const subscribeToPush = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: '<your-public-vapid-key>', // Replace with your VAPID public key
+      });
+      await axios.post(
+        `${BASE_URL}/api/push-subscription/`,
+        subscription,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      );
+      console.log('Push subscription sent to backend');
+    } catch (error) {
+      console.error('Push subscription failed:', error);
+      setError('Push bildirishnomalarga obuna bo‘lishda xato');
+    }
+  };
+
+  // Request notification permission and subscribe
+  useEffect(() => {
+    initializeAudio();
+
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          subscribeToPush();
+        } else {
+          setError('Bildirishnomalarni yoqish uchun ruxsat berish kerak');
+        }
+      });
+    }
+
+    const handleInteraction = () => {
+      if (!userInteracted) {
+        setUserInteracted(true);
+      }
+    };
+
+    const events = ['click', 'touchstart', 'mousedown', 'keydown', 'mousemove'];
+    events.forEach(event => window.addEventListener(event, handleInteraction));
+
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data.type === 'PLAY_NOTIFICATION_SOUND' && soundEnabled && userInteracted && audioRef.current) {
+        audioRef.current.play().catch(err => console.error('Sound playback error:', err));
+      }
+    });
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, handleInteraction));
+    };
+  }, [initializeAudio, userInteracted, soundEnabled]);
+
+  // Register periodic sync
+  useEffect(() => {
+    async function registerPeriodicSync() {
+      if ('serviceWorker' in navigator && 'PeriodicSyncManager' in window) {
+        const registration = await navigator.serviceWorker.ready;
+        try {
+          await registration.periodicSync.register('check-orders', {
+            minInterval: 10 * 1000,
+          });
+          console.log('Periodic sync registered');
+        } catch (error) {
+          console.error('Periodic sync registration failed:', error);
+        }
+      }
+    }
+    registerPeriodicSync();
+  }, []);
+
+  // WebSocket for real-time updates
+  useEffect(() => {
+    const ws = new WebSocket('wss://hosilbek02.pythonanywhere.com/ws/orders/');
+    ws.onmessage = event => {
+      const newOrder = JSON.parse(event.data);
+      if (newOrder.status === 'buyurtma_tushdi') {
+        setSuccess(`Yangi Buyurtma #${newOrder.id}!`);
+        setNewOrderCount(prev => prev + 1);
+        if (soundEnabled && userInteracted && audioRef.current) {
+          audioRef.current.play().catch(err => console.error('Sound playback error:', err));
+        }
+        fetchOrders();
+      }
+    };
+    ws.onclose = () => {
+      console.log('WebSocket closed, reconnecting...');
+      setTimeout(() => {
+        // Attempt to reconnect
+      }, 1000);
+    };
+    return () => ws.close();
+  }, [soundEnabled, userInteracted, fetchOrders]);
+
   // Fetch orders on mount and every 10 seconds
   useEffect(() => {
     if (token) {
       fetchOrders();
-      const interval = setInterval(fetchOrders, 10000); // Adjusted to 10 seconds
+      const interval = setInterval(fetchOrders, 10000);
       return () => clearInterval(interval);
     } else {
       setError('Tizimga kirish talab qilinadi');
@@ -546,7 +676,6 @@ const KitchenOrders = () => {
     );
   }
 
-  // Determine grid columns based on screen size
   const getGridColumns = () => {
     if (isMobile) return 12;
     if (isTablet) return 6;
@@ -667,6 +796,9 @@ const KitchenOrders = () => {
             bgcolor: 'white',
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            position: isMobile ? 'sticky' : 'static',
+            top: isMobile ? 0 : 'auto',
+            zIndex: 1000,
           }}
         >
           <Tab
@@ -701,17 +833,17 @@ const KitchenOrders = () => {
           />
           <Tab
             label={
-              <Badge badgeContent={filteredOrders[3].length} color="error">
+              <Badge badgeContent={filteredOrders[3].length} color="success">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <AssignmentReturn fontSize="small" />
+                  <DoneAll fontSize="small" />
                   <Typography>Yakunlangan ({filteredOrders[3].length})</Typography>
                 </Stack>
               </Badge>
             }
           />
-        <Tab
+          <Tab
             label={
-              <Badge badgeContent={filteredOrders[3].length} color="error">
+              <Badge badgeContent={filteredOrders[4].length} color="error">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AssignmentReturn fontSize="small" />
                   <Typography>Qaytarildi ({filteredOrders[4].length})</Typography>
@@ -751,12 +883,11 @@ const KitchenOrders = () => {
               </Button>
             </Paper>
           ) : (
-            <Grid container spacing={isMobile ? 2 : 3}>
+            <Grid container spacing={isMobile ? 1 : isTablet ? 2 : 3}>
               {filteredOrders[activeTab].map(order => (
                 <Grid item xs={getGridColumns()} key={order.id}>
                   <Card>
-                    <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-                      {/* Order Header */}
+                    <CardContent sx={{ p: isMobile ? 1.5 : 3 }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                         <Box>
                           <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -774,7 +905,6 @@ const KitchenOrders = () => {
 
                       <Divider sx={{ my: 1.5 }} />
 
-                      {/* Customer Info */}
                       <Box sx={{ mb: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
                           Mijoz
@@ -799,7 +929,14 @@ const KitchenOrders = () => {
                             {order.contact_number || 'Noma\'lum'}
                           </Typography>
                           <Tooltip title={order.address || 'Manzil kiritilmagan'} arrow>
-                            <Typography variant="body2" noWrap>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                textOverflow: 'ellipsis',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
                               <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                               {order.address || 'Manzil kiritilmagan'}
                             </Typography>
@@ -807,7 +944,6 @@ const KitchenOrders = () => {
                         </Stack>
                       </Box>
 
-                      {/* Order Details */}
                       <Box sx={{ mb: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
                           Tafsilotlar
@@ -828,7 +964,6 @@ const KitchenOrders = () => {
                         </Stack>
                       </Box>
 
-                      {/* Products Summary */}
                       <Box sx={{ mb: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
                           Mahsulotlar ({order.items.length})
@@ -847,7 +982,6 @@ const KitchenOrders = () => {
                         </Stack>
                       </Box>
 
-                      {/* Action Buttons */}
                       <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                         {order.status === 'buyurtma_tushdi' && (
                           <Button
@@ -855,7 +989,7 @@ const KitchenOrders = () => {
                             size="small"
                             startIcon={<Timer />}
                             onClick={() => openEditDialog(order)}
-                            sx={{ py: 0.8, flex: 1 }}
+                            sx={{ py: 0.8, flex: 1, minHeight: '48px' }}
                           >
                             Vaqt
                           </Button>
@@ -865,7 +999,7 @@ const KitchenOrders = () => {
                           size="small"
                           startIcon={<Print />}
                           onClick={() => printReceipt(order)}
-                          sx={{ py: 0.8, flex: 1 }}
+                          sx={{ py: 0.8, flex: 1, minHeight: '48px' }}
                         >
                           Chop et
                         </Button>
@@ -940,7 +1074,7 @@ const KitchenOrders = () => {
         {/* New Order Notification */}
         <Snackbar
           open={newOrderCount > 0}
-          autoHideDuration={6000}
+          autoHideDuration={5000}
           onClose={() => setNewOrderCount(0)}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
@@ -969,7 +1103,7 @@ const KitchenOrders = () => {
         {/* Error Notification */}
         <Snackbar
           open={!!error}
-          autoHideDuration={6000}
+          autoHideDuration={5000}
           onClose={() => setError('')}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
@@ -985,7 +1119,7 @@ const KitchenOrders = () => {
         {/* Success Notification */}
         <Snackbar
           open={!!success}
-          autoHideDuration={4000}
+          autoHideDuration={5000}
           onClose={() => setSuccess('')}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
@@ -998,7 +1132,6 @@ const KitchenOrders = () => {
           </Alert>
         </Snackbar>
 
-        {/* Scroll to top button */}
         <ScrollTop>
           <Fab color="primary" size="medium" aria-label="scroll back to top">
             <KeyboardArrowUp />
