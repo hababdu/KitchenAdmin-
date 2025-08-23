@@ -806,7 +806,6 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[0].length} color="warning">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AccessTime fontSize="small" />
-                  <Typography>Yangi ({filteredOrders[0].length})</Typography>
                 </Stack>
               </Badge>
             }
@@ -816,7 +815,6 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[1].length} color="info">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <Timer fontSize="small" />
-                  <Typography>Jarayonda ({filteredOrders[1].length})</Typography>
                 </Stack>
               </Badge>
             }
@@ -826,7 +824,6 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[2].length} color="primary">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <DirectionsBike fontSize="small" />
-                  <Typography>Yetkazilmoqda ({filteredOrders[2].length})</Typography>
                 </Stack>
               </Badge>
             }
@@ -836,7 +833,6 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[3].length} color="success">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <DoneAll fontSize="small" />
-                  <Typography>Yakunlangan ({filteredOrders[3].length})</Typography>
                 </Stack>
               </Badge>
             }
@@ -846,7 +842,6 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[4].length} color="error">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AssignmentReturn fontSize="small" />
-                  <Typography>Qaytarildi ({filteredOrders[4].length})</Typography>
                 </Stack>
               </Badge>
             }
@@ -883,7 +878,7 @@ const KitchenOrders = () => {
               </Button>
             </Paper>
           ) : (
-            <Grid container spacing={isMobile ? 1 : isTablet ? 2 : 3}>
+            <Grid mb={2} spacing={isMobile ? 1 : isTablet ? 2 : 3}>
               {filteredOrders[activeTab].map(order => (
                 <Grid item xs={getGridColumns()} key={order.id}>
                   <Card>
@@ -944,7 +939,7 @@ const KitchenOrders = () => {
                         </Stack>
                       </Box>
 
-                      <Box sx={{ mb: 1.5 }}>
+                      {/* <Box sx={{ mb: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
                           Tafsilotlar
                         </Typography>
@@ -962,7 +957,7 @@ const KitchenOrders = () => {
                             {formatTime(order.kitchen_time)}
                           </Typography>
                         </Stack>
-                      </Box>
+                      </Box> */}
 
                       <Box sx={{ mb: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
