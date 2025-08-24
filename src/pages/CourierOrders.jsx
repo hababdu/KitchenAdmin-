@@ -7,13 +7,14 @@ import {
   InputAdornment, IconButton, ThemeProvider, createTheme, useMediaQuery,
   Tabs, Tab, FormControlLabel, Switch,
   Tooltip, Menu, MenuItem, ListItemIcon, Fab, useScrollTrigger, Zoom, Badge,
-  Paper, Divider, Chip, Grid
+  Paper, Divider, Chip, Grid, Dialog as MuiDialog, DialogContent as MuiDialogContent,
+  DialogActions as MuiDialogActions
 } from '@mui/material';
 import {
   Refresh, Edit, Timer, ArrowBack, AccessTime, AssignmentReturn, Person,
   Phone, LocationOn, Payment, Restaurant, Notifications,
   MoreVert, CheckCircle, DirectionsBike, DoneAll, FilterList,
-  KeyboardArrowUp, Print
+  KeyboardArrowUp, Print, Close, Lock
 } from '@mui/icons-material';
 
 // Audio file
@@ -22,6 +23,9 @@ import newOrderSound from '../assets/notification.mp3';
 // API settings
 const BASE_URL = 'https://hosilbek02.pythonanywhere.com';
 const ORDERS_API = `${BASE_URL}/api/user/orders/`;
+
+// Fullscreen password
+const FULLSCREEN_PASSWORD = '1111';
 
 // Custom theme with responsive adjustments
 const theme = createTheme({
@@ -226,6 +230,10 @@ const KitchenOrders = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenDialogOpen, setFullscreenDialogOpen] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
   const audioRef = useRef(null);
 
   const token = localStorage.getItem('authToken');
@@ -239,7 +247,6 @@ const KitchenOrders = () => {
       audio.load();
       audioRef.current = audio;
     } catch (err) {
-      console.error('Audio initialization error:', err);
       setError('Ovoz faylini yuklashda xato.');
     }
   }, []);
@@ -381,7 +388,7 @@ const KitchenOrders = () => {
           try {
             await audioRef.current.play();
           } catch (err) {
-            console.error('Sound playback error:', err);
+            // Audio playback error handled silently
           }
         }
       } else {
@@ -525,26 +532,30 @@ const KitchenOrders = () => {
     setAnchorEl(null);
   };
 
-  // Subscribe to push notifications
-  const subscribeToPush = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: '<your-public-vapid-key>', // Replace with your VAPID public key
-      });
-      await axios.post(
-        `${BASE_URL}/api/push-subscription/`,
-        subscription,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      );
-      console.log('Push subscription sent to backend');
-    } catch (error) {
-      console.error('Push subscription failed:', error);
-      setError('Push bildirishnomalarga obuna bo‘lishda xato');
+  // Fullscreen functions
+  const handleFullscreenOpen = () => {
+    setFullscreenDialogOpen(true);
+  };
+
+  const handleFullscreenClose = () => {
+    setFullscreenDialogOpen(false);
+    setPasswordInput('');
+    setPasswordError(false);
+  };
+
+  const handleFullscreenToggle = () => {
+    if (passwordInput === FULLSCREEN_PASSWORD) {
+      setFullscreen(!fullscreen);
+      setFullscreenDialogOpen(false);
+      setPasswordInput('');
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
     }
+  };
+
+  const exitFullscreen = () => {
+    setFullscreen(false);
   };
 
   // Request notification permission and subscribe
@@ -552,13 +563,7 @@ const KitchenOrders = () => {
     initializeAudio();
 
     if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          subscribeToPush();
-        } else {
-          setError('Bildirishnomalarni yoqish uchun ruxsat berish kerak');
-        }
-      });
+      Notification.requestPermission();
     }
 
     const handleInteraction = () => {
@@ -570,57 +575,10 @@ const KitchenOrders = () => {
     const events = ['click', 'touchstart', 'mousedown', 'keydown', 'mousemove'];
     events.forEach(event => window.addEventListener(event, handleInteraction));
 
-    navigator.serviceWorker.addEventListener('message', event => {
-      if (event.data.type === 'PLAY_NOTIFICATION_SOUND' && soundEnabled && userInteracted && audioRef.current) {
-        audioRef.current.play().catch(err => console.error('Sound playback error:', err));
-      }
-    });
-
     return () => {
       events.forEach(event => window.removeEventListener(event, handleInteraction));
     };
   }, [initializeAudio, userInteracted, soundEnabled]);
-
-  // Register periodic sync
-  useEffect(() => {
-    async function registerPeriodicSync() {
-      if ('serviceWorker' in navigator && 'PeriodicSyncManager' in window) {
-        const registration = await navigator.serviceWorker.ready;
-        try {
-          await registration.periodicSync.register('check-orders', {
-            minInterval: 10 * 1000,
-          });
-          console.log('Periodic sync registered');
-        } catch (error) {
-          console.error('Periodic sync registration failed:', error);
-        }
-      }
-    }
-    registerPeriodicSync();
-  }, []);
-
-  // WebSocket for real-time updates
-  useEffect(() => {
-    const ws = new WebSocket('wss://hosilbek02.pythonanywhere.com/ws/orders/');
-    ws.onmessage = event => {
-      const newOrder = JSON.parse(event.data);
-      if (newOrder.status === 'buyurtma_tushdi') {
-        setSuccess(`Yangi Buyurtma #${newOrder.id}!`);
-        setNewOrderCount(prev => prev + 1);
-        if (soundEnabled && userInteracted && audioRef.current) {
-          audioRef.current.play().catch(err => console.error('Sound playback error:', err));
-        }
-        fetchOrders();
-      }
-    };
-    ws.onclose = () => {
-      console.log('WebSocket closed, reconnecting...');
-      setTimeout(() => {
-        // Attempt to reconnect
-      }, 1000);
-    };
-    return () => ws.close();
-  }, [soundEnabled, userInteracted, fetchOrders]);
 
   // Fetch orders on mount and every 10 seconds
   useEffect(() => {
@@ -641,6 +599,35 @@ const KitchenOrders = () => {
       return () => clearTimeout(timer);
     }
   }, [newOrderCount]);
+
+  // Handle fullscreen mode
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // ESC tugmasi bilan to'liq ekrandan chiqish
+      if (e.key === 'Escape' && fullscreen) {
+        exitFullscreen();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    if (fullscreen) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.documentElement.style.overflow = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+    };
+  }, [fullscreen]);
 
   if (loading && orders.length === 0) {
     return (
@@ -686,118 +673,182 @@ const KitchenOrders = () => {
     <ThemeProvider theme={theme}>
       <Box
         sx={{
-          p: isMobile ? 1 : 3,
+          p: fullscreen ? 0 : (isMobile ? 1 : 3),
           bgcolor: 'background.default',
-          minHeight: '100vh',
-          maxWidth: 1200,
-          mx: 'auto',
+          minHeight: fullscreen ? '100vh' : '100vh',
+          maxWidth: fullscreen ? '100%' : 1200,
+          mx: fullscreen ? 0 : 'auto',
+          overflow: fullscreen ? 'hidden' : 'auto',
+          position: fullscreen ? 'fixed' : 'relative',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: fullscreen ? 9999 : 1,
         }}
       >
-        {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <IconButton
-              onClick={() => navigate(-1)}
-              sx={{
-                bgcolor: 'primary.light',
-                color: 'primary.main',
-                '&:hover': { bgcolor: 'primary.main', color: 'white' },
-              }}
-            >
-              <ArrowBack />
-            </IconButton>
-            <Typography variant="h6" fontWeight="bold">
-              Oshxona Buyurtmalari
-            </Typography>
-          </Stack>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Tooltip title="Ovozni yoqish/o'chirish">
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={soundEnabled}
-                    onChange={() => setSoundEnabled(prev => !prev)}
-                    color="primary"
-                    size="small"
-                  />
-                }
-                label={soundEnabled ? 'Ovoz yoqilgan' : 'Ovoz o\'chirilgan'}
-                labelPlacement="start"
-                sx={{ '& .MuiTypography-root': { fontSize: '0.8rem', color: 'text.secondary' } }}
-              />
-            </Tooltip>
-            <Tooltip title="Yangilash">
+        {/* Fullscreen exit button */}
+        {fullscreen && (
+          <IconButton
+            onClick={exitFullscreen}
+            sx={{
+              position: 'fixed',
+              top: 16,
+              right: 16,
+              zIndex: 10000,
+              bgcolor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+            }}
+          >
+            <Close />
+          </IconButton>
+        )}
+
+        {/* Normal mode header */}
+        {!fullscreen && (
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
               <IconButton
-                onClick={() => {
-                  setLoading(true);
-                  fetchOrders();
-                }}
+                onClick={() => navigate(-1)}
                 sx={{
                   bgcolor: 'primary.light',
                   color: 'primary.main',
                   '&:hover': { bgcolor: 'primary.main', color: 'white' },
                 }}
               >
-                <Refresh />
+                <ArrowBack />
               </IconButton>
-            </Tooltip>
-            <IconButton
-              aria-label="more"
-              aria-controls="long-menu"
-              aria-haspopup="true"
-              onClick={handleMenuOpen}
-              sx={{
-                bgcolor: 'background.paper',
-                boxShadow: 1,
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <MoreVert />
-            </IconButton>
-            <Menu
-              id="long-menu"
-              anchorEl={anchorEl}
-              keepMounted
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              PaperProps={{
-                style: {
-                  width: '200px',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                  borderRadius: '12px',
-                },
-              }}
-            >
-              <MenuItem onClick={() => { handleMenuClose(); }}>
-                <ListItemIcon>
-                  <FilterList fontSize="small" />
-                </ListItemIcon>
-                Filtrlash
-              </MenuItem>
-              <MenuItem onClick={() => { handleMenuClose(); }}>
-                <ListItemIcon>
-                  <Notifications fontSize="small" />
-                </ListItemIcon>
-                Bildirishnomalar
-              </MenuItem>
-            </Menu>
+              <Typography variant="h6" fontWeight="bold">
+                Oshxona Buyurtmalari
+              </Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Tooltip title="Ovozni yoqish/o'chirish">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={soundEnabled}
+                      onChange={() => setSoundEnabled(prev => !prev)}
+                      color="primary"
+                      size="small"
+                    />
+                  }
+                  label={soundEnabled ? 'Ovoz yoqilgan' : 'Ovoz o\'chirilgan'}
+                  labelPlacement="start"
+                  sx={{ '& .MuiTypography-root': { fontSize: '0.8rem', color: 'text.secondary' } }}
+                />
+              </Tooltip>
+              <Tooltip title="To'liq ekran rejimi">
+                <IconButton
+                  onClick={handleFullscreenOpen}
+                  sx={{
+                    bgcolor: 'primary.light',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'primary.main', color: 'white' },
+                  }}
+                >
+                  <Lock />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Yangilash">
+                <IconButton
+                  onClick={() => {
+                    setLoading(true);
+                    fetchOrders();
+                  }}
+                  sx={{
+                    bgcolor: 'primary.light',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'primary.main', color: 'white' },
+                  }}
+                >
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+              <IconButton
+                aria-label="more"
+                aria-controls="long-menu"
+                aria-haspopup="true"
+                onClick={handleMenuOpen}
+                sx={{
+                  bgcolor: 'background.paper',
+                  boxShadow: 1,
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <MoreVert />
+              </IconButton>
+              <Menu
+                id="long-menu"
+                anchorEl={anchorEl}
+                keepMounted
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                  style: {
+                    width: '200px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    borderRadius: '12px',
+                  },
+                }}
+              >
+                <MenuItem onClick={() => { handleMenuClose(); }}>
+                  <ListItemIcon>
+                    <FilterList fontSize="small" />
+                  </ListItemIcon>
+                  Filtrlash
+                </MenuItem>
+                <MenuItem onClick={() => { handleMenuClose(); }}>
+                  <ListItemIcon>
+                    <Notifications fontSize="small" />
+                  </ListItemIcon>
+                  Bildirishnomalar
+                </MenuItem>
+              </Menu>
+            </Stack>
           </Stack>
-        </Stack>
+        )}
+
+        {/* Fullscreen mode header */}
+        {fullscreen && (
+          <Box sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'white', 
+            py: 1, 
+            px: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Typography variant="h6" fontWeight="bold">
+              Oshxona Buyurtmalari
+            </Typography>
+            <Typography variant="body2">
+              {new Date().toLocaleDateString('uz-UZ', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </Typography>
+          </Box>
+        )}
 
         {/* Tabs with badges */}
         <Tabs
           value={activeTab}
           onChange={(e, newValue) => setActiveTab(newValue)}
-          variant={isMobile ? 'scrollable' : 'fullWidth'}
+          variant={isMobile || fullscreen ? 'scrollable' : 'fullWidth'}
           scrollButtons="auto"
           allowScrollButtonsMobile
           sx={{
             mb: 2,
             bgcolor: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            position: isMobile ? 'sticky' : 'static',
-            top: isMobile ? 0 : 'auto',
+            borderRadius: fullscreen ? '0' : '12px',
+            boxShadow: fullscreen ? 'none' : '0 2px 8px rgba(0,0,0,0.1)',
+            position: isMobile || fullscreen ? 'sticky' : 'static',
+            top: isMobile || fullscreen ? 0 : 'auto',
             zIndex: 1000,
           }}
         >
@@ -806,6 +857,7 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[0].length} color="warning">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AccessTime fontSize="small" />
+                  {!fullscreen && <span>Yangi</span>}
                 </Stack>
               </Badge>
             }
@@ -815,6 +867,7 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[1].length} color="info">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <Timer fontSize="small" />
+                  {!fullscreen && <span>Vaqt belgilandi</span>}
                 </Stack>
               </Badge>
             }
@@ -824,6 +877,7 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[2].length} color="primary">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <DirectionsBike fontSize="small" />
+                  {!fullscreen && <span>Kuryer oldi</span>}
                 </Stack>
               </Badge>
             }
@@ -833,6 +887,7 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[3].length} color="success">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <DoneAll fontSize="small" />
+                  {!fullscreen && <span>Yakunlangan</span>}
                 </Stack>
               </Badge>
             }
@@ -842,6 +897,7 @@ const KitchenOrders = () => {
               <Badge badgeContent={filteredOrders[4].length} color="error">
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <AssignmentReturn fontSize="small" />
+                  {!fullscreen && <span>Qaytarildi</span>}
                 </Stack>
               </Badge>
             }
@@ -849,7 +905,10 @@ const KitchenOrders = () => {
         </Tabs>
 
         {/* Orders Grid */}
-        <Box id="back-to-top-anchor" sx={{ mb: isMobile ? 16 : 8 }}>
+        <Box id="back-to-top-anchor" sx={{ 
+          mb: isMobile || fullscreen ? 2 : 8,
+          px: fullscreen ? 2 : 0
+        }}>
           {filteredOrders[activeTab].length === 0 ? (
             <Paper
               sx={{
@@ -878,11 +937,14 @@ const KitchenOrders = () => {
               </Button>
             </Paper>
           ) : (
-            <Grid mb={2} spacing={isMobile ? 1 : isTablet ? 2 : 3}>
+            <Grid container spacing={isMobile || fullscreen ? 1 : isTablet ? 2 : 3}>
               {filteredOrders[activeTab].map(order => (
                 <Grid item xs={getGridColumns()} key={order.id}>
-                  <Card>
-                    <CardContent sx={{ p: isMobile ? 1.5 : 3 }}>
+                  <Card sx={{ 
+                    borderRadius: fullscreen ? '8px' : '16px',
+                    boxShadow: fullscreen ? '0 2px 4px rgba(0,0,0,0.1)' : '0 4px 12px rgba(0,0,0,0.1)'
+                  }}>
+                    <CardContent sx={{ p: isMobile || fullscreen ? 1.5 : 3 }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                         <Box>
                           <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -938,26 +1000,6 @@ const KitchenOrders = () => {
                           </Tooltip>
                         </Stack>
                       </Box>
-
-                      {/* <Box sx={{ mb: 1.5 }}>
-                        <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
-                          Tafsilotlar
-                        </Typography>
-                        <Stack spacing={1}>
-                          <Typography variant="body2" noWrap>
-                            <Restaurant fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                            {order.kitchen?.name || 'Noma\'lum'}
-                          </Typography>
-                          <Typography variant="body2">
-                            <Payment fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                            {order.payment === 'naqd' ? 'Naqd' : 'Karta orqali'}
-                          </Typography>
-                          <Typography variant="body2">
-                            <Timer fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                            {formatTime(order.kitchen_time)}
-                          </Typography>
-                        </Stack>
-                      </Box> */}
 
                       <Box sx={{ mb: 1.5 }}>
                         <Typography variant="subtitle2" fontWeight="bold" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -1066,6 +1108,48 @@ const KitchenOrders = () => {
           </DialogActions>
         </Dialog>
 
+        {/* Fullscreen Password Dialog */}
+        <MuiDialog
+          open={fullscreenDialogOpen}
+          onClose={handleFullscreenClose}
+          maxWidth="xs"
+          fullWidth
+          sx={{ '& .MuiDialog-paper': { borderRadius: '16px', p: 2 } }}
+        >
+          <MuiDialogContent>
+            <Typography variant="h6" gutterBottom>
+              To'liq Ekran Rejimi
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              To'liq ekran rejimiga o'tish uchun parolni kiriting.
+            </Typography>
+            <TextField
+              label="Parol"
+              type="password"
+              fullWidth
+              value={passwordInput}
+              onChange={(e) => {
+                setPasswordInput(e.target.value);
+                setPasswordError(false);
+              }}
+              error={passwordError}
+              helperText={passwordError ? "Noto'g'ri parol" : ""}
+              sx={{ mb: 2 }}
+            />
+          </MuiDialogContent>
+          <MuiDialogActions>
+            <Button onClick={handleFullscreenClose}>
+              Bekor qilish
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleFullscreenToggle}
+            >
+              Tasdiqlash
+            </Button>
+          </MuiDialogActions>
+        </MuiDialog>
+
         {/* New Order Notification */}
         <Snackbar
           open={newOrderCount > 0}
@@ -1127,15 +1211,16 @@ const KitchenOrders = () => {
           </Alert>
         </Snackbar>
 
-        <ScrollTop>
-          <Fab color="primary" size="medium" aria-label="scroll back to top">
-            <KeyboardArrowUp />
-          </Fab>
-        </ScrollTop>
+        {!fullscreen && (
+          <ScrollTop>
+            <Fab color="primary" size="medium" aria-label="scroll back to top">
+              <KeyboardArrowUp />
+            </Fab>
+          </ScrollTop>
+        )}
       </Box>
     </ThemeProvider>
   );
 };
 
 export default KitchenOrders;
- 
